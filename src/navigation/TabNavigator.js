@@ -1,0 +1,53 @@
+/**
+ * FYNP Tab Navigator
+ * Bottom tab navigation for main app screens
+ */
+
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import HomeStackNavigator from './HomeStackNavigator';
+import PortfolioScreen from '../screens/Portfolio/PortfolioScreen';
+import ProfileScreen from '../screens/Profile/ProfileScreen';
+import OffersScreen from '../screens/Offers/OffersScreen';
+
+const Tab = createBottomTabNavigator();
+
+const TabNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {display: 'none'},
+      }}>
+      <Tab.Screen
+        name="Home"
+        component={HomeStackNavigator}
+        options={{
+          tabBarLabel: 'Home',
+        }}
+      />
+      <Tab.Screen
+        name="Portfolio"
+        component={PortfolioScreen}
+        options={{
+          tabBarLabel: 'Portfolio',
+        }}
+      />
+      <Tab.Screen
+        name="Offers"
+        component={OffersScreen}
+        options={{
+          tabBarLabel: 'Offers',
+        }}
+      />
+      <Tab.Screen
+        name="Account"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Account',
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+export default TabNavigator;

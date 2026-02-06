@@ -1,0 +1,18 @@
+/**
+ * FYNP Theme System
+ * Central export for all theme utilities
+ */
+
+import colors from './colors';
+import typography from './typography';
+import spacing from './spacing';
+import shadows from './shadows';
+
+export {colors, typography, spacing, shadows};
+
+export default {
+  colors,
+  typography,
+  spacing,
+  shadows,
+};
