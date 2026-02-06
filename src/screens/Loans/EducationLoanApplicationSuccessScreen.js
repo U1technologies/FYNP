@@ -1,6 +1,6 @@
 /**
- * FYNP KYC Verification Screen
- * Success screen after application submission
+ * FYNP Education Loan Application Success Screen
+ * Shows confirmation and next steps after education loan application submission
  */
 
 import React from 'react';
@@ -12,37 +12,53 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {CheckCircle, Phone, ArrowRight} from 'lucide-react-native';
+import {X, CheckCircle, Phone, MessageCircle, ArrowRight} from 'lucide-react-native';
 
-const KYCVerificationScreen = ({navigation, route}) => {
-  const formData = route.params || {};
+const EducationLoanApplicationSuccessScreen = ({navigation, route}) => {
+  const {applicationData} = route.params || {};
 
-  // Generate a random Application ID
+  // Generate Application ID
   const generateApplicationID = () => {
-    const randomNum = Math.floor(Math.random() * 10000000);
-    return `FYNP-${randomNum}`;
+    const randomNum = Math.floor(Math.random() * 10000);
+    return `EDU-${Math.floor(Math.random() * 10000)}-${randomNum}`;
   };
 
   const applicationID = React.useMemo(() => generateApplicationID(), []);
-
-  const handleGoHome = () => {
-    navigation.navigate('Dashboard');
-  };
 
   const handleCallSupport = () => {
     // In a real app, this would trigger a phone call
     console.log('Call Support');
   };
 
+  const handleChatSupport = () => {
+    // In a real app, this would open a chat interface
+    console.log('Chat with Support');
+  };
+
+  const handleGoToStatus = () => {
+    // Navigate to the loan application status screen
+    navigation.navigate('LoanApplicationStatus');
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="light-content" backgroundColor="#09090b" />
 
-      {/* Success Content */}
+      {/* Header with Close Button */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.closeBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <X size={20} color="#ffffff" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Main Content */}
       <View style={styles.content}>
         {/* Success Icon */}
         <View style={styles.successIcon}>
-          <CheckCircle size={40} color="#22c55e" />
+          <CheckCircle size={48} color="#22c55e" />
         </View>
 
         {/* Title */}
@@ -50,32 +66,46 @@ const KYCVerificationScreen = ({navigation, route}) => {
 
         {/* Description */}
         <Text style={styles.description}>
-          Your details have been received securely. Our team will verify your
-          profile and contact you shortly to process your loan.
+          Our education loan consultant will contact you shortly to assist with
+          the documentation and further process.
         </Text>
 
         {/* Application ID Card */}
         <View style={styles.idCard}>
           <Text style={styles.idLabel}>Application ID</Text>
-          <Text style={styles.idValue}>{applicationID}</Text>
+          <Text style={styles.idValue}>#{applicationID}</Text>
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusText}>Status: In Review</Text>
+          </View>
         </View>
 
-        {/* Support Section */}
-        <View style={styles.supportSection}>
+        {/* Support Options */}
+        <View style={styles.supportOptions}>
           <TouchableOpacity
             style={styles.supportBtn}
             onPress={handleCallSupport}
           >
             <Phone size={20} color="#ffffff" />
-            <Text style={styles.supportBtnText}>Call Support Team</Text>
+            <Text style={styles.supportBtnText}>Call Support</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.supportBtn}
+            onPress={handleChatSupport}
+          >
+            <MessageCircle size={20} color="#ffffff" />
+            <Text style={styles.supportBtnText}>Chat with Us</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Footer */}
+      {/* Footer Action */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.primaryBtn} onPress={handleGoHome}>
-          <Text style={styles.primaryBtnText}>Go to Home</Text>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={handleGoToStatus}
+        >
+          <Text style={styles.actionBtnText}>Go to Status of Apply</Text>
           <ArrowRight size={18} color="#ffffff" />
         </TouchableOpacity>
       </View>
@@ -89,15 +119,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#09090b',
   },
 
+  // Header
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    alignItems: 'flex-end',
+    borderBottomWidth: 1,
+    borderBottomColor: '#27272a',
+  },
+
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#18181b',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#27272a',
+  },
+
   // Content
   content: {
     flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 40,
-    display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 24,
   },
 
   // Success Icon
@@ -106,17 +155,14 @@ const styles = StyleSheet.create({
     height: 80,
     backgroundColor: 'rgba(34, 197, 94, 0.1)',
     borderRadius: 40,
-    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
   },
 
   // Title
   title: {
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: 12,
     color: '#ffffff',
     textAlign: 'center',
   },
@@ -126,12 +172,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#71717a',
     lineHeight: 22,
-    marginBottom: 32,
-    maxWidth: 300,
     textAlign: 'center',
+    marginBottom: 8,
   },
 
-  // ID Card
+  // Application ID Card
   idCard: {
     backgroundColor: '#141417',
     borderWidth: 1,
@@ -140,11 +185,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
     width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 40,
   },
 
   idLabel: {
@@ -162,67 +204,79 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Support Section
-  supportSection: {
+  statusBadge: {
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 99,
+    marginTop: 4,
+  },
+
+  statusText: {
+    fontSize: 12,
+    color: '#7c3aed',
+    fontWeight: '600',
+  },
+
+  // Support Options
+  supportOptions: {
+    flexDirection: 'row',
+    gap: 12,
     width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
+    justifyContent: 'center',
   },
 
   supportBtn: {
-    display: 'flex',
-    flexDirection: 'row',
+    flex: 1,
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    gap: 8,
     backgroundColor: '#18181b',
-    borderRadius: 16,
-    color: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#27272a',
   },
 
   supportBtnText: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#ffffff',
   },
 
   // Footer
   footer: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingVertical: 16,
+    paddingBottom: 24,
     borderTopWidth: 1,
     borderTopColor: '#27272a',
     backgroundColor: '#09090b',
   },
 
-  primaryBtn: {
+  actionBtn: {
     width: '100%',
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderRadius: 999,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#7c3aed',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: '#8b5cf6',
+    shadowColor: '#7c3aed',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 2,
   },
 
-  primaryBtnText: {
+  actionBtnText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#ffffff',
-    letterSpacing: 0.3,
   },
 });
 
-export default KYCVerificationScreen;
+export default EducationLoanApplicationSuccessScreen;

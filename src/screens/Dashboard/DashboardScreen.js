@@ -121,7 +121,10 @@ const DashboardScreen = ({navigation}) => {
             </TouchableOpacity>
 
             {/* Track Goals Card */}
-            <TouchableOpacity style={[styles.smartCard, styles.trackGoalsCard]}>
+            <TouchableOpacity
+              style={[styles.smartCard, styles.trackGoalsCard]}
+              onPress={() => navigation.navigate('EMICalculator')}
+            >
               <Text style={[styles.cardLabel, {color: '#a1a1aa'}]}>Track goals</Text>
               <Text style={[styles.cardTitle, {color: '#ffffff'}]}>Plan your EMIs before you apply</Text>
               <Text style={[styles.cardDesc, {color: '#a1a1aa'}]}>Use EMI & interest tools to stay in control.</Text>
@@ -155,7 +158,13 @@ const DashboardScreen = ({navigation}) => {
           {/* Hero Card */}
           <TouchableOpacity
             style={styles.heroCard}
-            onPress={() => navigation.navigate('LoanMarketplace')}
+            onPress={() =>
+              navigation.navigate('LoanConfiguration', {
+                bankName: 'HDFC Bank',
+                bankLogo: 'HDFC',
+                interestRate: 10.75,
+              })
+            }
           >
             <View style={styles.recommendedTag}>
               <Text style={styles.recommendedTagText}>Recommended</Text>
@@ -176,7 +185,11 @@ const DashboardScreen = ({navigation}) => {
             {/* Personal Loan */}
             <TouchableOpacity
               style={styles.bentoCard}
-              onPress={() => navigation.navigate('LoanMarketplace')}
+              onPress={() =>
+                navigation.navigate('LoanMarketplace', {
+                  selectedLoanType: 'Personal',
+                })
+              }
             >
               <View style={styles.bentoTag}>
                 <Text style={styles.bentoTagText}>Fast</Text>
@@ -189,7 +202,12 @@ const DashboardScreen = ({navigation}) => {
             </TouchableOpacity>
 
             {/* Education Loan */}
-            <TouchableOpacity style={styles.bentoCard}>
+            <TouchableOpacity
+              style={styles.bentoCard}
+              onPress={() =>
+                navigation.navigate('EducationLoans')
+              }
+            >
               <View style={[styles.bentoTag, {backgroundColor: 'rgba(34, 197, 94, 0.1)'}]}>
                 <Text style={[styles.bentoTagText, {color: '#4ade80'}]}>Students</Text>
               </View>
@@ -202,7 +220,10 @@ const DashboardScreen = ({navigation}) => {
           </View>
 
           {/* Business Loan - Full Width */}
-          <TouchableOpacity style={styles.bentoCardWide}>
+          <TouchableOpacity
+            style={styles.bentoCardWide}
+            onPress={() => navigation.navigate('BusinessLoans')}
+          >
             <View style={styles.bentoIconBox}>
               <Briefcase size={20} color="#a1a1aa" />
             </View>
@@ -240,7 +261,10 @@ const DashboardScreen = ({navigation}) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Secured loans</Text>
           <View style={styles.grid2Col}>
-            <TouchableOpacity style={styles.bentoCard}>
+            <TouchableOpacity
+              style={styles.bentoCard}
+              onPress={() => navigation.navigate('HomeLoans')}
+            >
               <View style={styles.bentoIconBox}>
                 <House size={20} color="#a1a1aa" />
               </View>
