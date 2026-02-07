@@ -27,6 +27,7 @@ import EducationLoanApplicationScreen from '../screens/Loans/EducationLoanApplic
 import EducationLoanApplicationSuccessScreen from '../screens/Loans/EducationLoanApplicationSuccessScreen';
 import LoanDetailsScreen from '../screens/Loans/LoanDetailsScreen';
 import EMICalculatorScreen from '../screens/Tools/EMICalculatorScreen';
+import PortfolioScreen from '../screens/Portfolio/PortfolioScreen';
 
 const Stack = createStackNavigator();
 
@@ -55,6 +56,7 @@ const HomeStackNavigator = () => {
       <Stack.Screen name="SelectLender" component={SelectLenderScreen} />
       <Stack.Screen name="KYCVerification" component={KYCVerificationScreen} />
       <Stack.Screen name="EMICalculator" component={EMICalculatorScreen} />
+      <Stack.Screen name="Portfolio" component={PortfolioScreen} />
     </Stack.Navigator>
   );
 };
