@@ -14,6 +14,7 @@ import {
   Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {colors} from '../../theme';
 
 const CreditCardsScreen = ({navigation}) => {
   const [selectedFilter, setSelectedFilter] = useState('All Cards');
@@ -27,7 +28,7 @@ const CreditCardsScreen = ({navigation}) => {
       bank: 'Axis Bank',
       tag: 'Premium',
       tagColor: 'rgba(139, 92, 246, 0.15)',
-      tagTextColor: '#8b5cf6',
+      tagTextColor: 'colors.secondaryBg',
       image: 'https://app.banani.co/image-fallback.png',
       features: [
         {text: '5X Rewards', highlight: true, detail: 'on Travel'},

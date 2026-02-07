@@ -14,6 +14,7 @@ import {
   TextInput,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {colors} from '../../theme';
 
 const KYCVerificationScreen = ({navigation, route}) => {
   const {lender} = route.params;
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
   methodCardRecommended: {
     backgroundColor: '#0f1115',
     borderWidth: 1,
-    borderColor: '#8b5cf6',
+    borderColor: 'colors.secondaryBg',
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -472,8 +473,8 @@ const styles = StyleSheet.create({
   },
 
   checkboxActive: {
-    backgroundColor: '#8b5cf6',
-    borderColor: '#8b5cf6',
+    backgroundColor: 'colors.secondaryBg',
+    borderColor: 'colors.secondaryBg',
   },
 
   checkboxIcon: {

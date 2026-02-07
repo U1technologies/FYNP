@@ -3,7 +3,7 @@
  * Redesigned loan marketplace with featured products
  */
 
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Animated,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {colors} from '../../theme';
 import {
   Bell,
   Settings2,
@@ -41,9 +43,31 @@ import {
   ArrowRight,
 } from 'lucide-react-native';
 
+
 const DashboardScreen = ({navigation}) => {
   const userName = 'Arjun';
   const [activeTab, setActiveTab] = React.useState('Home');
+  const scrollX = useRef(new Animated.Value(0)).current;
+
+  // Lenders list - duplicated for seamless loop
+  const lenders = ['HDFC Bank', 'ICICI Bank', 'Bajaj Finserv', 'IDFC FIRST', 'Kotak', 'Axis Bank'];
+  const duplicatedLenders = [...lenders, ...lenders, ...lenders];
+
+  useEffect(() => {
+    const startAnimation = () => {
+      scrollX.setValue(0);
+      Animated.loop(
+        Animated.timing(scrollX, {
+          toValue: -1200,
+          duration: 20000,
+          useNativeDriver: true,
+          isInteraction: false,
+        })
+      ).start();
+    };
+
+    startAnimation();
+  }, [scrollX]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -130,22 +154,27 @@ const DashboardScreen = ({navigation}) => {
         </View>
 
         {/* Trusted Partners */}
-        <View style={styles.section}>
+        <View style={styles.sectionFullWidth}>
           <Text style={styles.partnerLabel}>Rates from 10.99% RBI Registered Partners</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.lendersScrollContent}
-          >
-            <View style={styles.lendersTrack}>
-              <Text style={styles.lenderLogo}>HDFC Bank</Text>
-              <Text style={styles.lenderLogo}>ICICI Bank</Text>
-              <Text style={styles.lenderLogo}>Bajaj Finserv</Text>
-              <Text style={styles.lenderLogo}>IDFC FIRST</Text>
-              <Text style={styles.lenderLogo}>Kotak</Text>
-              <Text style={styles.lenderLogo}>Axis Bank</Text>
+          <View style={styles.lendersContainer}>
+            <View style={styles.lendersGradient}>
+              <View style={styles.lendersScrollWrapper}>
+                <Animated.View
+                  style={[
+                    styles.lendersTrack,
+                    {
+                      transform: [{translateX: scrollX}],
+                    },
+                  ]}>
+                  {duplicatedLenders.map((lender, index) => (
+                    <Text key={`${lender}-${index}`} style={styles.lenderLogo}>
+                      {lender}
+                    </Text>
+                  ))}
+                </Animated.View>
+              </View>
             </View>
-          </ScrollView>
+          </View>
         </View>
 
         {/* Featured For You */}
@@ -153,23 +182,31 @@ const DashboardScreen = ({navigation}) => {
           <Text style={styles.sectionTitle}>Featured for you</Text>
 
           {/* Hero Card */}
-          <TouchableOpacity
-            style={styles.heroCard}
-            onPress={() => navigation.navigate('LoanMarketplace')}
-          >
-            <View style={styles.recommendedTag}>
-              <Text style={styles.recommendedTagText}>Recommended</Text>
-            </View>
-            <View style={styles.bentoIconBox}>
-              <Sparkles size={20} color="#ffffff" />
-            </View>
-            <Text style={styles.bentoTitle}>Check your max loan limit</Text>
-            <Text style={styles.bentoText}>Get instant approval up to 25 Lakhs without affecting credit score.</Text>
-            <View style={styles.bentoAction}>
-              <Text style={styles.bentoActionText}>Check Eligibility</Text>
-              <ArrowRight size={14} color="#ffffff" />
-            </View>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.heroCard}>
+
+  <View style={{ zIndex: 2 }}>
+    <View style={styles.recommendedTag}>
+      <Text style={styles.recommendedTagText}>Recommended</Text>
+    </View>
+
+    <View style={styles.bentoIconBox}>
+      <Sparkles size={20} color="#ffffff" />
+    </View>
+
+    <Text style={styles.cardTitle}>Check your max loan limit</Text>
+
+    <Text style={styles.bentoText}>
+      Get instant approval up to 25 Lakhs without affecting credit score.
+    </Text>
+
+    <View style={styles.bentoAction}>
+      <Text style={styles.bentoActionText}>Check Eligibility</Text>
+      <ArrowRight size={14} color="#ffffff" />
+    </View>
+  </View>
+
+</TouchableOpacity>
+
 
           {/* Product Grid */}
           <View style={styles.grid2Col}>
@@ -300,16 +337,24 @@ const DashboardScreen = ({navigation}) => {
         </View>
 
         {/* Guidance Banner */}
-        <TouchableOpacity style={styles.guidanceBanner}>
-          <View style={styles.guidanceInfo}>
-            <Text style={styles.guidanceTitle}>Not sure which loan fits?</Text>
-            <Text style={styles.guidanceDesc}>Let FYNP AI match you with the right product.</Text>
-          </View>
-          <View style={styles.guidanceBtn}>
-            <Wand2 size={14} color="#ffffff" />
-            <Text style={styles.guidanceBtnText}>Get recommendation</Text>
-          </View>
-        </TouchableOpacity>
+       <TouchableOpacity style={styles.guidanceBanner}>
+
+  <View style={styles.guidanceInfo}>
+    <Text style={styles.cardTitle}>Not sure which loan fits?</Text>
+
+    <Text style={styles.guidanceDesc}>
+      Let FYNP AI match you with the right product.
+    </Text>
+
+    {/* BUTTON MOVED BELOW TEXT */}
+    <View style={styles.guidanceBtnBottom}>
+      <Wand2 size={14} color="#ffffff" />
+      <Text style={styles.guidanceBtnText}>Get recommendation</Text>
+    </View>
+  </View>
+
+</TouchableOpacity>
+
 
         {/* Why FYNP */}
         <View style={styles.section}>
@@ -352,29 +397,29 @@ const DashboardScreen = ({navigation}) => {
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => handleNavigation('Home')}>
-          <Home size={24} color={activeTab === 'Home' ? '#8b5cf6' : '#71717a'} />
-          <Text style={[styles.navLabel, {color: activeTab === 'Home' ? '#8b5cf6' : '#71717a'}]}>Home</Text>
+          <Home size={24} color={activeTab === 'Home' ? colors.secondaryBg : colors.textMuted} />
+          <Text style={[styles.navLabel, {color: activeTab === 'Home' ? colors.secondaryBg : colors.textMuted}]}>Home</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => handleNavigation('Status')}>
-          <PieChart size={24} color={activeTab === 'Status' ? '#8b5cf6' : '#71717a'} />
-          <Text style={[styles.navLabel, {color: activeTab === 'Status' ? '#8b5cf6' : '#71717a'}]}>Status</Text>
+          <PieChart size={24} color={activeTab === 'Status' ? colors.secondaryBg : colors.textMuted} />
+          <Text style={[styles.navLabel, {color: activeTab === 'Status' ? colors.secondaryBg : colors.textMuted}]}>Status</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => handleNavigation('Account')}>
-          <UserRound size={24} color={activeTab === 'Account' ? '#8b5cf6' : '#71717a'} />
-          <Text style={[styles.navLabel, {color: activeTab === 'Account' ? '#8b5cf6' : '#71717a'}]}>Account</Text>
+          <UserRound size={24} color={activeTab === 'Account' ? colors.secondaryBg : colors.textMuted} />
+          <Text style={[styles.navLabel, {color: activeTab === 'Account' ? colors.secondaryBg : colors.textMuted}]}>Account</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => handleNavigation('Offers')}>
-          <Sparkles size={24} color={activeTab === 'Offers' ? '#8b5cf6' : '#71717a'} />
-          <Text style={[styles.navLabel, {color: activeTab === 'Offers' ? '#8b5cf6' : '#71717a'}]}>Offers</Text>
+          <Sparkles size={24} color={activeTab === 'Offers' ? colors.secondaryBg : colors.textMuted} />
+          <Text style={[styles.navLabel, {color: activeTab === 'Offers' ? colors.secondaryBg : colors.textMuted}]}>Offers</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -384,7 +429,7 @@ const DashboardScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.background,
   },
 
   // Header
@@ -408,8 +453,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#27272a',
-    backgroundColor: '#27272a',
+    borderColor: colors.border,
+    backgroundColor: colors.border,
   },
 
   avatarImage: {
@@ -423,13 +468,13 @@ const styles = StyleSheet.create({
 
   headerGreeting: {
     fontSize: 12,
-    color: '#a1a1aa',
+    color: colors.textTertiary,
   },
 
   headerUsername: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.textPrimary,
   },
 
   headerActions: {
@@ -442,17 +487,17 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 50,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
   },
 
   // Content Scroll
   contentScroll: {
     paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 50,
     gap: 24,
   },
 
@@ -460,10 +505,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
+  sectionFullWidth: {
+    gap: 12,
+    marginHorizontal: -20,
+    paddingHorizontal: 0,
+  },
+
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.textPrimary,
   },
 
   sectionHeader: {
@@ -475,49 +526,51 @@ const styles = StyleSheet.create({
 
   sectionLink: {
     fontSize: 13,
-    color: '#8b5cf6',
+    color: colors.secondaryBg,
     fontWeight: '500',
   },
 
   // Smart Loan Picks Carousel
   carouselContent: {
-    gap: 12,
-    paddingRight: 12,
+    gap: 16,
+    paddingRight: 10,
   },
 
   smartCard: {
     minWidth: 260,
-    borderRadius: 24,
+    borderRadius: 12,
     padding: 16,
     borderWidth: 1,
   },
 
   featuredCard: {
     backgroundColor: 'rgba(30, 27, 75, 0.8)',
-    borderColor: 'rgba(139, 92, 246, 0.4)',
+    borderColor: `${colors.primaryBg}66`,
   },
 
   trackGoalsCard: {
-    backgroundColor: '#141417',
-    borderColor: '#27272a',
+    backgroundColor: colors.backgroundCard,
+    borderColor: colors.border,
   },
 
   cardLabel: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginBottom: 4,
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 6,
   },
 
   cardTitle: {
-    fontSize: 16,
+    fontSize: 18,
+    width: '90%',
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 4,
+    color: colors.textPrimary,
+    marginBottom: 6,
   },
 
   cardDesc: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
+     width: '85%',
+    color: colors.textSecondary,
     marginBottom: 10,
   },
 
@@ -534,66 +587,77 @@ const styles = StyleSheet.create({
   },
 
   cardActionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textPrimary,
   },
 
   // Trusted Partners
   partnerLabel: {
-    fontSize: 11,
-    color: '#71717a',
+    fontSize: 14,
+    color: colors.textMuted,
     textAlign: 'center',
     marginBottom: 8,
+    paddingHorizontal: 20,
   },
 
-  lendersScrollContent: {
-    gap: 12,
-    paddingRight: 20,
+  lendersContainer: {
+    width: '100%',
+    overflow: 'hidden',
+  },
+
+  lendersGradient: {
+    backgroundColor: colors.primaryBg,
+    paddingVertical: 12,
+    overflow: 'hidden',
+  },
+
+  lendersScrollWrapper: {
+    overflow: 'hidden',
   },
 
   lendersTrack: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    gap: 20,
+    gap: 30,
   },
 
   lenderLogo: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#71717a',
-    opacity: 0.7,
+    fontWeight: '500',
+    color: colors.white,
+    opacity: 0.95,
+    letterSpacing: 0.8,
+    // minWidth: 100,
+    textAlign: 'center',
   },
 
   // Featured Grid
-  heroCard: {
-    backgroundColor: 'linear-gradient(135deg, #4c1d95 0%, #09090b 100%)',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.3)',
-    justifyContent: 'space-between',
-  },
+heroCard: {
+   backgroundColor: 'rgba(30, 27, 75, 0.8)',
+    borderColor: `${colors.primaryBg}66`,
+  borderRadius: 16,
+  padding: 16,
+  borderWidth: 1,
+  overflow: 'hidden',
+},
 
-  recommendedTag: {
-    backgroundColor: '#8b5cf6',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    marginBottom: 10,
-  },
+recommendedTag: {
+  position: 'absolute',
+  top: 8,
+  right: 6,
+  backgroundColor: colors.secondaryBg,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 999,
+  zIndex: 5,
+},
+
 
   recommendedTagText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.textPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -609,15 +673,15 @@ const styles = StyleSheet.create({
   },
 
   bentoTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.textPrimary,
     marginBottom: 4,
   },
 
   bentoText: {
     fontSize: 12,
-    color: '#a1a1aa',
+    color: colors.textTertiary,
     lineHeight: 18,
   },
 
@@ -629,9 +693,9 @@ const styles = StyleSheet.create({
   },
 
   bentoActionText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.textPrimary,
   },
 
   grid2Col: {
@@ -641,11 +705,11 @@ const styles = StyleSheet.create({
 
   bentoCard: {
     flex: 1,
-    backgroundColor: '#141417',
+    backgroundColor: colors.backgroundCard,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
   },
 
   bentoTag: {
@@ -660,17 +724,17 @@ const styles = StyleSheet.create({
   bentoTagText: {
     fontSize: 10,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: colors.textPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
 
   bentoCardWide: {
-    backgroundColor: '#141417',
+    backgroundColor: colors.backgroundCard,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -687,44 +751,55 @@ const styles = StyleSheet.create({
   },
 
   toolChip: {
-    minWidth: 100,
-    backgroundColor: '#18181b',
-    borderRadius: 16,
+    minWidth: 110,
+    backgroundColor: 'rgba(30, 27, 75, 0.8)',
+    borderColor: `${colors.primaryBg}66`,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#27272a',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     alignItems: 'center',
     gap: 8,
   },
 
   toolIcon: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderRadius: 50,
-    backgroundColor: '#27272a',
+    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   toolName: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '500',
-    color: '#ffffff',
+    color: colors.textPrimary,
   },
 
   // Guidance Banner
-  guidanceBanner: {
-    backgroundColor: 'linear-gradient(to right, #1e1b4b, #312e81)',
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
-  },
+guidanceBanner: {
+  backgroundColor: '#1e1b4b',   // base indigo
+  borderRadius: 12,
+  paddingHorizontal: 16,
+  paddingVertical: 16,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+
+  borderWidth: 1,
+  borderColor: 'rgba(139,92,246,0.2)',
+
+  // subtle depth
+  shadowColor: '#312e81',
+  shadowOpacity: 0.35,
+  shadowRadius: 12,
+  elevation: 4,
+  flexDirection: 'column',
+alignItems: 'flex-start',
+
+},
+
 
   guidanceInfo: {
     flex: 1,
@@ -733,17 +808,17 @@ const styles = StyleSheet.create({
   guidanceTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.textPrimary,
     marginBottom: 4,
   },
 
   guidanceDesc: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: colors.textSecondary,
   },
 
   guidanceBtn: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.secondaryBg,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
@@ -751,11 +826,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  guidanceBtnBottom: {
+  marginTop: 14,
+  alignSelf: 'flex-start',
+
+  backgroundColor: colors.secondaryBg,
+  paddingHorizontal: 16,
+  paddingVertical: 10,
+  borderRadius: 999,
+
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+},
+
 
   guidanceBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textPrimary,
   },
 
   // Why FYNP
@@ -766,27 +855,27 @@ const styles = StyleSheet.create({
 
   whyCard: {
     minWidth: 160,
-    backgroundColor: '#141417',
+    backgroundColor: colors.backgroundCard,
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
 
   whyText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
-    color: '#ffffff',
+    color: colors.textPrimary,
   },
 
   // Trust Text
   trustText: {
     fontSize: 11,
-    color: '#71717a',
+    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 10,
   },
@@ -798,9 +887,9 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 80,
-    backgroundColor: 'rgba(9, 9, 11, 0.96)',
+    backgroundColor: colors.backgroundSecondary,
     borderTopWidth: 1,
-    borderTopColor: '#27272a',
+    borderTopColor: colors.borderLight,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -817,7 +906,7 @@ const styles = StyleSheet.create({
 
   navLabel: {
     fontSize: 11,
-    color: '#71717a',
+    color: colors.textTertiary,
     fontWeight: '500',
   },
 });

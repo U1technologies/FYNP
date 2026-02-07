@@ -14,6 +14,7 @@ import {
   Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {colors} from '../../theme';
 import {
   ArrowLeft,
   Search,
@@ -81,10 +82,10 @@ const LoanMarketplaceScreen = ({navigation}) => {
 
   const getFeatureIcon = (feature, index) => {
     if (feature.includes('Instant')) return <Zap size={12} color="#fbbf24" />;
-    if (feature.includes('Paperless')) return <FileCheck size={12} color="#8b5cf6" />;
-    if (feature.includes('Disbursal')) return <Clock size={12} color="#71717a" />;
-    if (feature.includes('Zero')) return <CheckCircle size={12} color="#71717a" />;
-    if (feature.includes('Digital')) return <Smartphone size={12} color="#71717a" />;
+    if (feature.includes('Paperless')) return <FileCheck size={12} color={colors.primaryBg} />;
+    if (feature.includes('Disbursal')) return <Clock size={12} color={colors.textMuted} />;
+    if (feature.includes('Zero')) return <CheckCircle size={12} color={colors.textMuted} />;
+    if (feature.includes('Digital')) return <Smartphone size={12} color={colors.textMuted} />;
     return null;
   };
 
@@ -236,7 +237,7 @@ const LoanMarketplaceScreen = ({navigation}) => {
           style={styles.navItem}
           onPress={() => navigation.navigate('Home')}
         >
-          <Home size={18} color="#71717a" />
+          <Home size={18} color={colors.textMuted} />
           <Text style={styles.navLabel}>Home</Text>
         </TouchableOpacity>
 
@@ -244,15 +245,15 @@ const LoanMarketplaceScreen = ({navigation}) => {
           style={styles.navItem}
           onPress={() => setActiveNavTab('Status')}
         >
-          <ListChecks size={18} color="#8b5cf6" />
-          <Text style={[styles.navLabel, {color: '#8b5cf6'}]}>Status of apply</Text>
+          <ListChecks size={18} color={colors.secondaryBg} />
+          <Text style={[styles.navLabel, {color: colors.secondaryBg}]}>Status of apply</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => navigation.navigate('Account')}
         >
-          <User size={18} color="#71717a" />
+          <User size={18} color={colors.textMuted} />
           <Text style={styles.navLabel}>Account</Text>
         </TouchableOpacity>
 
@@ -260,7 +261,7 @@ const LoanMarketplaceScreen = ({navigation}) => {
           style={styles.navItem}
           onPress={() => navigation.navigate('Offers')}
         >
-          <Sparkles size={18} color="#71717a" />
+          <Sparkles size={18} color={colors.textMuted} />
           <Text style={styles.navLabel}>Offers</Text>
         </TouchableOpacity>
       </View>
@@ -271,7 +272,7 @@ const LoanMarketplaceScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.background,
   },
 
   // Header
@@ -283,8 +284,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
-    backgroundColor: '#09090b',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
   },
 
   backBtn: {
@@ -292,18 +293,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 50,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
     flexShrink: 0,
   },
 
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.textPrimary,
     flex: 1,
     letterSpacing: 0.3,
     marginHorizontal: 8,
@@ -314,37 +315,42 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 50,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
     flexShrink: 0,
   },
 
   // Tabs
   tabsContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 28,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
-    backgroundColor: '#09090b',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
   },
 
   tabPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     borderRadius: 999,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.backgroundTertiary,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.borderLight,
+    minWidth: 85,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   tabPillActive: {
-    backgroundColor: '#8b5cf6',
-    borderColor: '#8b5cf6',
-    shadowColor: '#8b5cf6',
+    backgroundColor: colors.secondaryBg,
+    borderColor: colors.secondaryBg,
+    shadowColor: colors.secondaryBg,
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -352,15 +358,18 @@ const styles = StyleSheet.create({
   },
 
   tabText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#71717a',
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    includeFontPadding: false,
   },
 
   tabTextActive: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 12,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    fontSize: 14,
+    lineHeight: 18,
   },
 
   // Scroll Content
@@ -369,7 +378,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     gap: 20,
     paddingBottom: 100,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.background,
   },
 
   // Comparison Banner
@@ -381,20 +390,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.4)',
+    borderColor: `${colors.primaryBg}66`,
   },
 
   bannerTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.textPrimary,
     marginBottom: 4,
     letterSpacing: 0.2,
   },
 
   bannerDesc: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
+    color: colors.textSecondary,
     lineHeight: 16,
   },
 
@@ -418,7 +427,7 @@ const styles = StyleSheet.create({
   resultCount: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#a1a1aa',
+    color: colors.textTertiary,
   },
 
   filterBtn: {
@@ -428,24 +437,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
   },
 
   filterBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.textPrimary,
   },
 
   // Offer Card
   offerCard: {
-    backgroundColor: '#141417',
+    backgroundColor: colors.backgroundCard,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
     gap: 16,
   },
 
@@ -466,7 +475,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -476,19 +485,19 @@ const styles = StyleSheet.create({
   bankLogoText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#000000',
+    color: colors.black,
   },
 
   bankName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.textPrimary,
     marginBottom: 2,
   },
 
   bankTag: {
     fontSize: 12,
-    color: '#a1a1aa',
+    color: colors.textTertiary,
     fontWeight: '500',
   },
 
@@ -511,26 +520,26 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
     gap: 16,
   },
 
   statLabel: {
     fontSize: 11,
-    color: '#71717a',
+    color: colors.textMuted,
     marginBottom: 4,
   },
 
   statValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.textPrimary,
   },
 
   statUnit: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#71717a',
+    color: colors.textMuted,
     marginLeft: 4,
   },
 
@@ -555,15 +564,15 @@ const styles = StyleSheet.create({
 
   featureText: {
     fontSize: 11,
-    color: '#71717a',
+    color: colors.textMuted,
   },
 
   applyBtn: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.secondaryBg,
     paddingHorizontal: 22,
     paddingVertical: 10,
     borderRadius: 999,
-    shadowColor: '#8b5cf6',
+    shadowColor: colors.secondaryBg,
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -573,7 +582,7 @@ const styles = StyleSheet.create({
   applyBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.textPrimary,
     letterSpacing: 0.3,
   },
 
@@ -586,7 +595,7 @@ const styles = StyleSheet.create({
 
   trustText: {
     fontSize: 11,
-    color: '#71717a',
+    color: colors.textMuted,
   },
 
   // Bottom Navigation
@@ -596,9 +605,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 80,
-    backgroundColor: 'rgba(9, 9, 11, 0.98)',
+    backgroundColor: `${colors.background}FA`,
     borderTopWidth: 1,
-    borderTopColor: '#27272a',
+    borderTopColor: colors.border,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -614,7 +623,7 @@ const styles = StyleSheet.create({
 
   navLabel: {
     fontSize: 10,
-    color: '#71717a',
+    color: colors.textMuted,
     fontWeight: '600',
   },
 });
