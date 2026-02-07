@@ -31,8 +31,9 @@ import {
   Sparkles,
 } from 'lucide-react-native';
 
-const LoanMarketplaceScreen = ({navigation}) => {
-  const [activeTab, setActiveTab] = React.useState('Personal');
+const LoanMarketplaceScreen = ({navigation, route}) => {
+  const {selectedLoanType} = route.params || {};
+  const [activeTab, setActiveTab] = React.useState(selectedLoanType || 'Personal');
   const [activeNavTab, setActiveNavTab] = React.useState('Status');
 
   const tabs = ['Personal', 'Education', 'Home Loan', 'Business', 'LAP'];
@@ -147,7 +148,14 @@ const LoanMarketplaceScreen = ({navigation}) => {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Comparison Banner */}
-        <TouchableOpacity style={styles.compareBanner}>
+        <TouchableOpacity
+          style={styles.compareBanner}
+          onPress={() =>
+            navigation.navigate('LoanComparison', {
+              loanAmount: 500000,
+            })
+          }
+        >
           <View>
             <Text style={styles.bannerTitle}>Not sure which to pick?</Text>
             <Text style={styles.bannerDesc}>Compare up to 3 lenders side-by-side</Text>
@@ -214,7 +222,16 @@ const LoanMarketplaceScreen = ({navigation}) => {
                   </View>
                 ))}
               </View>
-              <TouchableOpacity style={styles.applyBtn}>
+              <TouchableOpacity
+                style={styles.applyBtn}
+                onPress={() =>
+                  navigation.navigate('LoanConfiguration', {
+                    bankName: offer.bank,
+                    bankLogo: offer.logo,
+                    interestRate: parseFloat(offer.rate),
+                  })
+                }
+              >
                 <Text style={styles.applyBtnText}>Check Eligibility</Text>
               </TouchableOpacity>
             </View>
@@ -383,7 +400,7 @@ const styles = StyleSheet.create({
 
   // Comparison Banner
   compareBanner: {
-    backgroundColor: 'linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)',
+    backgroundColor: '#1e1b4b',
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
