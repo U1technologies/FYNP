@@ -3,7 +3,7 @@
  * Redesigned loan marketplace with featured products
  */
 
-import React, {useEffect, useRef} from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,8 @@ import {
   Image,
   Animated,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {colors} from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../../theme';
 import {
   Bell,
   Settings2,
@@ -44,10 +44,46 @@ import {
 } from 'lucide-react-native';
 
 
-const DashboardScreen = ({navigation}) => {
+import { useFocusEffect } from '@react-navigation/native';
+import { useThemeStore } from '../../store/themeStore';
+
+const DashboardScreen = ({ navigation }) => {
+  const { isDarkMode } = useThemeStore();
+  const theme = isDarkMode ? colors : colors.light;
+
+
+
+  // Enhanced Light Mode Colors
+  // Enhanced Light Mode Colors
+  const currentBackground = theme.background;
+  const currentCard = theme.card;
+  const currentText = theme.textPrimary;
+  const currentBorder = theme.border;
+  const primaryBlue = colors.primaryBg; // #0e499c
+  const primaryOrange = colors.secondaryBg; // #ff914d
+
+  // Card backgrounds with blue tint for light mode
+  const cardBgPrimary = isDarkMode ? 'rgba(30, 27, 75, 0.8)' : theme.secondary; // Use theme.secondary for light tint
+  const cardBgSecondary = theme.muted;
+
+  // Icon colors - Orange accent
+  const iconColor = isDarkMode ? currentText : primaryOrange;
+  const iconBgColor = isDarkMode ? theme.muted : 'rgba(255, 145, 77, 0.1)';
+
+  // Text Colors
+  const sectionTitleColor = theme.textPrimary;
+  const descTextColor = theme.textSecondary;
+
   const userName = 'Arjun';
   const [activeTab, setActiveTab] = React.useState('Home');
   const scrollX = useRef(new Animated.Value(0)).current;
+
+  // Reset active tab to Home when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      setActiveTab('Home');
+    }, [])
+  );
 
   // Lenders list - duplicated for seamless loop
   const lenders = ['HDFC Bank', 'ICICI Bank', 'Bajaj Finserv', 'IDFC FIRST', 'Kotak', 'Axis Bank'];
@@ -90,40 +126,41 @@ const DashboardScreen = ({navigation}) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#09090b" />
+    <SafeAreaView style={[styles.container, { backgroundColor: currentBackground }]} edges={['top']}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={currentBackground} />
 
       {/* Header */}
       <View style={styles.homeHeader}>
         <View style={styles.headerLeft}>
-          <View style={styles.headerAvatar}>
+          <View style={[styles.headerAvatar, { borderColor: isDarkMode ? currentBorder : primaryOrange, backgroundColor: isDarkMode ? currentBorder : 'rgba(255, 145, 77, 0.2)' }]}>
             <Image
-              source={{uri: 'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSouth%20Asian%2F3'}}
+              source={{ uri: 'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSouth%20Asian%2F3' }}
               style={styles.avatarImage}
             />
           </View>
           <View style={styles.headerTextGroup}>
-            <Text style={styles.headerGreeting}>{getGreeting()},</Text>
-            <Text style={styles.headerUsername}>{userName}</Text>
+            <Text style={[styles.headerGreeting, { color: descTextColor }]}>{getGreeting()},</Text>
+            <Text style={[styles.headerUsername, { color: currentText }]}>{userName}</Text>
           </View>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.actionBtn}>
-            <Bell size={18} color="#ffffff" />
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: iconBgColor, borderColor: isDarkMode ? currentBorder : primaryOrange }]}>
+            <Bell size={18} color={iconColor} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn}>
-            <Settings2 size={18} color="#ffffff" />
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: iconBgColor, borderColor: isDarkMode ? currentBorder : primaryOrange }]}>
+            <Settings2 size={18} color={iconColor} />
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentScroll}>
+        contentContainerStyle={styles.contentScroll}
+      >
 
         {/* Smart Loan Picks Banner */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Smart loan picks</Text>
+          <Text style={[styles.sectionTitle, { color: sectionTitleColor }]}>Smart loan picks</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -132,45 +169,49 @@ const DashboardScreen = ({navigation}) => {
           >
             {/* Featured Card */}
             <TouchableOpacity
-              style={[styles.smartCard, styles.featuredCard]}
+              style={[styles.smartCard, styles.featuredCard, { backgroundColor: cardBgPrimary, borderColor: isDarkMode ? currentBorder : primaryBlue }]}
               onPress={() => navigation.navigate('LoanMarketplace')}
             >
-              <Text style={styles.cardLabel}>Featured</Text>
-              <Text style={styles.cardTitle}>Compare loans. Choose smarter.</Text>
-              <Text style={styles.cardDesc}>See offers from top banks & NBFCs in one view.</Text>
+              <Text style={[styles.cardLabel, { color: descTextColor }]}>Featured</Text>
+              <Text style={[styles.cardTitle, { color: isDarkMode ? '#ffffff' : currentText }]}>Compare loans. Choose smarter.</Text>
+              <Text style={[styles.cardDesc, { color: isDarkMode ? '#a1a1aa' : descTextColor }]}>See offers from top banks & NBFCs in one view.</Text>
               <View style={styles.cardAction}>
-                <Text style={styles.cardActionText}>View loan marketplace</Text>
-                <ArrowRight size={14} color="#ffffff" />
+                <Text style={[styles.cardActionText, { color: isDarkMode ? '#ffffff' : primaryBlue }]}>View loan marketplace</Text>
+                <ArrowRight size={14} color={isDarkMode ? '#ffffff' : primaryBlue} />
               </View>
             </TouchableOpacity>
 
             {/* Track Goals Card */}
             <TouchableOpacity
-              style={[styles.smartCard, styles.trackGoalsCard]}
+              style={[
+                styles.smartCard,
+                styles.trackGoalsCard,
+                { backgroundColor: currentCard, borderColor: currentBorder }
+              ]}
               onPress={() => navigation.navigate('EMICalculator')}
             >
-              <Text style={[styles.cardLabel, {color: '#a1a1aa'}]}>Track goals</Text>
-              <Text style={[styles.cardTitle, {color: '#ffffff'}]}>Plan your EMIs before you apply</Text>
-              <Text style={[styles.cardDesc, {color: '#a1a1aa'}]}>Use EMI & interest tools to stay in control.</Text>
+              <Text style={[styles.cardLabel, { color: descTextColor }]}>Track goals</Text>
+              <Text style={[styles.cardTitle, { color: currentText }]}>Plan your EMIs before you apply</Text>
+              <Text style={[styles.cardDesc, { color: descTextColor }]}>Use EMI & interest tools to stay in control.</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
 
         {/* Trusted Partners */}
         <View style={styles.sectionFullWidth}>
-          <Text style={styles.partnerLabel}>Rates from 10.99% RBI Registered Partners</Text>
+          <Text style={[styles.partnerLabel, { color: theme.textMuted }]}>Rates from 10.99% RBI Registered Partners</Text>
           <View style={styles.lendersContainer}>
-            <View style={styles.lendersGradient}>
+            <View style={[styles.lendersGradient, { backgroundColor: theme.primaryBg }]}>
               <View style={styles.lendersScrollWrapper}>
                 <Animated.View
                   style={[
                     styles.lendersTrack,
                     {
-                      transform: [{translateX: scrollX}],
+                      transform: [{ translateX: scrollX }],
                     },
                   ]}>
                   {duplicatedLenders.map((lender, index) => (
-                    <Text key={`${lender}-${index}`} style={styles.lenderLogo}>
+                    <Text key={`${lender}-${index}`} style={[styles.lenderLogo, { color: '#ffffff' }]}>
                       {lender}
                     </Text>
                   ))}
@@ -182,11 +223,11 @@ const DashboardScreen = ({navigation}) => {
 
         {/* Featured For You */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Featured for you</Text>
+          <Text style={[styles.sectionTitle, { color: sectionTitleColor }]}>Featured for you</Text>
 
           {/* Hero Card */}
           <TouchableOpacity
-            style={styles.heroCard}
+            style={[styles.heroCard, { backgroundColor: isDarkMode ? 'rgba(30, 27, 75, 0.8)' : currentCard, borderColor: currentBorder }]}
             onPress={() =>
               navigation.navigate('LoanConfiguration', {
                 bankName: 'HDFC Bank',
@@ -195,17 +236,17 @@ const DashboardScreen = ({navigation}) => {
               })
             }
           >
-            <View style={styles.recommendedTag}>
-              <Text style={styles.recommendedTagText}>Recommended</Text>
+            <View style={[styles.recommendedTag, { backgroundColor: theme.secondaryBg }]}>
+              <Text style={[styles.recommendedTagText, { color: '#ffffff' }]}>Recommended</Text>
             </View>
             <View style={styles.bentoIconBox}>
               <Sparkles size={20} color="#ffffff" />
             </View>
-            <Text style={styles.bentoTitle}>Check your max loan limit</Text>
-            <Text style={styles.bentoText}>Get instant approval up to 25 Lakhs without affecting credit score.</Text>
+            <Text style={[styles.bentoTitle, { color: currentText }]}>Check your max loan limit</Text>
+            <Text style={[styles.bentoText, { color: descTextColor }]}>Get instant approval up to 25 Lakhs without affecting credit score.</Text>
             <View style={styles.bentoAction}>
-              <Text style={styles.bentoActionText}>Check Eligibility</Text>
-              <ArrowRight size={14} color="#ffffff" />
+              <Text style={[styles.bentoActionText, { color: isDarkMode ? '#ffffff' : primaryBlue }]}>Check Eligibility</Text>
+              <ArrowRight size={14} color={isDarkMode ? '#ffffff' : primaryBlue} />
             </View>
           </TouchableOpacity>
 
@@ -213,100 +254,96 @@ const DashboardScreen = ({navigation}) => {
           <View style={styles.grid2Col}>
             {/* Personal Loan */}
             <TouchableOpacity
-              style={styles.bentoCard}
-              onPress={() =>
-                navigation.navigate('LoanMarketplace', {
-                  selectedLoanType: 'Personal',
-                })
-              }
+              style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}
+              onPress={() => navigation.navigate('PersonalLoans')}
             >
-              <View style={styles.bentoTag}>
-                <Text style={styles.bentoTagText}>Fast</Text>
+              <View style={[styles.bentoTag, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 145, 77, 0.1)' }]}>
+                <Text style={[styles.bentoTagText, { color: isDarkMode ? currentText : primaryOrange }]}>Fast</Text>
               </View>
-              <View style={styles.bentoIconBox}>
-                <Wallet size={20} color="#a1a1aa" />
+              <View style={[styles.bentoIconBox, { backgroundColor: iconBgColor, borderWidth: 1, borderColor: isDarkMode ? 'transparent' : primaryOrange }]}>
+                <Wallet size={20} color={iconColor} />
               </View>
-              <Text style={styles.bentoTitle}>Personal Loan</Text>
-              <Text style={styles.bentoText}>From 10.99%</Text>
+              <Text style={[styles.bentoTitle, { color: currentText }]}>Personal Loan</Text>
+              <Text style={[styles.bentoText, { color: descTextColor }]}>From 10.99%</Text>
             </TouchableOpacity>
 
             {/* Education Loan */}
             <TouchableOpacity
-              style={styles.bentoCard}
+              style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}
               onPress={() =>
                 navigation.navigate('EducationLoans')
               }
             >
-              <View style={[styles.bentoTag, {backgroundColor: 'rgba(34, 197, 94, 0.1)'}]}>
-                <Text style={[styles.bentoTagText, {color: '#4ade80'}]}>Students</Text>
+              <View style={[styles.bentoTag, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
+                <Text style={[styles.bentoTagText, { color: '#4ade80' }]}>Students</Text>
               </View>
-              <View style={styles.bentoIconBox}>
-                <GraduationCap size={20} color="#a1a1aa" />
+              <View style={[styles.bentoIconBox, { backgroundColor: iconBgColor, borderWidth: 1, borderColor: isDarkMode ? 'transparent' : primaryOrange }]}>
+                <GraduationCap size={20} color={iconColor} />
               </View>
-              <Text style={styles.bentoTitle}>Education Loan</Text>
-              <Text style={styles.bentoText}>Flexible moratorium</Text>
+              <Text style={[styles.bentoTitle, { color: currentText }]}>Education Loan</Text>
+              <Text style={[styles.bentoText, { color: descTextColor }]}>Flexible moratorium</Text>
             </TouchableOpacity>
           </View>
 
           {/* Business Loan - Full Width */}
           <TouchableOpacity
-            style={styles.bentoCardWide}
+            style={[styles.bentoCardWide, { backgroundColor: currentCard, borderColor: currentBorder }]}
             onPress={() => navigation.navigate('BusinessLoans')}
           >
-            <View style={styles.bentoIconBox}>
-              <Briefcase size={20} color="#a1a1aa" />
+            <View style={[styles.bentoIconBox, { backgroundColor: iconBgColor, borderWidth: 1, borderColor: isDarkMode ? 'transparent' : primaryOrange }]}>
+              <Briefcase size={20} color={iconColor} />
             </View>
             <View style={styles.bentoWideContent}>
-              <Text style={styles.bentoTitle}>Business & MSME Loans</Text>
-              <Text style={styles.bentoText}>GST-based offers Low documentation</Text>
+              <Text style={[styles.bentoTitle, { color: currentText }]}>Business & MSME Loans</Text>
+              <Text style={[styles.bentoText, { color: descTextColor }]}>GST-based offers • Low documentation</Text>
             </View>
-            <ChevronRight size={20} color="#71717a" />
+            <ChevronRight size={20} color={iconColor} />
           </TouchableOpacity>
         </View>
 
         {/* Short Term Loans */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Short term loans</Text>
+          <Text style={[styles.sectionTitle, { color: currentText }]}>Short term loans</Text>
           <View style={styles.grid2Col}>
-            <TouchableOpacity style={styles.bentoCard}>
-              <View style={styles.bentoIconBox}>
-                <Clock3 size={20} color="#a1a1aa" />
+            <TouchableOpacity style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
+              <View style={[styles.bentoIconBox, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <Clock3 size={20} color={theme.textTertiary} />
               </View>
-              <Text style={styles.bentoTitle}>Payday Loan</Text>
-              <Text style={styles.bentoText}>Up to 3 months</Text>
+              <Text style={[styles.bentoTitle, { color: currentText }]}>Payday Loan</Text>
+              <Text style={[styles.bentoText, { color: theme.textTertiary }]}>Up to 3 months</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.bentoCard}>
-              <View style={styles.bentoIconBox}>
-                <ShoppingBag size={20} color="#a1a1aa" />
+            <TouchableOpacity style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
+              <View style={[styles.bentoIconBox, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <ShoppingBag size={20} color={theme.textTertiary} />
               </View>
-              <Text style={styles.bentoTitle}>BNPL</Text>
-              <Text style={styles.bentoText}>Buy now, pay later</Text>
+              <Text style={[styles.bentoTitle, { color: currentText }]}>BNPL</Text>
+              <Text style={[styles.bentoText, { color: theme.textTertiary }]}>Buy now, pay later</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Secured Loans */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Secured loans</Text>
+          <Text style={[styles.sectionTitle, { color: currentText }]}>Secured loans</Text>
           <View style={styles.grid2Col}>
             <TouchableOpacity
-              style={styles.bentoCard}
+              style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}
               onPress={() => navigation.navigate('HomeLoans')}
             >
-              <View style={styles.bentoIconBox}>
-                <House size={20} color="#a1a1aa" />
+              <View style={[styles.bentoIconBox, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <House size={20} color={theme.textTertiary} />
               </View>
-              <Text style={styles.bentoTitle}>Home Loan</Text>
-              <Text style={styles.bentoText}>From 8.5% p.a.</Text>
+              <Text style={[styles.bentoTitle, { color: currentText }]}>Home Loan</Text>
+              <Text style={[styles.bentoText, { color: theme.textTertiary }]}>From 8.5% p.a.</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.bentoCard}>
-              <View style={styles.bentoIconBox}>
-                <FileBadge size={20} color="#a1a1aa" />
+            <TouchableOpacity style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
+              <View style={[styles.bentoIconBox, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <FileBadge size={20} color={theme.textTertiary} />
               </View>
-              <Text style={styles.bentoTitle}>LAP</Text>
-              <Text style={styles.bentoText}>Loan against property</Text>
+              <Text style={[styles.bentoTitle, { color: currentText }]}>LAP</Text>
+              <Text style={[styles.bentoText, { color: theme.textTertiary }]}>Loan against property</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -314,7 +351,7 @@ const DashboardScreen = ({navigation}) => {
         {/* Tools */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Tools</Text>
+            <Text style={[styles.sectionTitle, { color: currentText }]}>Tools</Text>
             <Text style={styles.sectionLink}>View all</Text>
           </View>
           <ScrollView
@@ -322,120 +359,144 @@ const DashboardScreen = ({navigation}) => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.toolsScrollContent}
           >
-            <View style={styles.toolChip}>
-              <View style={styles.toolIcon}>
-                <Calculator size={16} color="#ffffff" />
+            <TouchableOpacity
+              style={[styles.toolChip, {
+                backgroundColor: isDarkMode ? 'rgba(30, 27, 75, 0.8)' : colors.white,
+                borderColor: isDarkMode ? `${colors.primaryBg}66` : theme.border
+              }]}
+              onPress={() => navigation.navigate('EMICalculator')}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: theme.backgroundSecondary }]}>
+                <Calculator size={16} color={currentText} />
               </View>
-              <Text style={styles.toolName}>EMI Calc</Text>
-            </View>
+              <Text style={[styles.toolName, { color: currentText }]}>EMI Calc</Text>
+            </TouchableOpacity>
 
-            <View style={styles.toolChip}>
-              <View style={styles.toolIcon}>
-                <BarChart3 size={16} color="#ffffff" />
+            <TouchableOpacity
+              style={[styles.toolChip, {
+                backgroundColor: isDarkMode ? 'rgba(30, 27, 75, 0.8)' : colors.white,
+                borderColor: isDarkMode ? `${colors.primaryBg}66` : theme.border
+              }]}
+              onPress={() => navigation.navigate('LoanComparison')}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: theme.backgroundSecondary }]}>
+                <BarChart3 size={16} color={currentText} />
               </View>
-              <Text style={styles.toolName}>Compare</Text>
-            </View>
+              <Text style={[styles.toolName, { color: currentText }]}>Compare</Text>
+            </TouchableOpacity>
 
-            <View style={styles.toolChip}>
-              <View style={styles.toolIcon}>
-                <BadgeIndianRupee size={16} color="#ffffff" />
+            <TouchableOpacity
+              style={[styles.toolChip, {
+                backgroundColor: isDarkMode ? 'rgba(30, 27, 75, 0.8)' : colors.white,
+                borderColor: isDarkMode ? `${colors.primaryBg}66` : theme.border
+              }]}
+              onPress={() => navigation.navigate('LoanEligibility')}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: theme.backgroundSecondary }]}>
+                <BadgeIndianRupee size={16} color={currentText} />
               </View>
-              <Text style={styles.toolName}>Eligibility</Text>
-            </View>
+              <Text style={[styles.toolName, { color: currentText }]}>Eligibility</Text>
+            </TouchableOpacity>
 
-            <View style={styles.toolChip}>
-              <View style={styles.toolIcon}>
-                <FileText size={16} color="#ffffff" />
+            <TouchableOpacity
+              style={[styles.toolChip, {
+                backgroundColor: isDarkMode ? 'rgba(30, 27, 75, 0.8)' : colors.white,
+                borderColor: isDarkMode ? `${colors.primaryBg}66` : theme.border
+              }]}
+              onPress={() => navigation.navigate('TaxSaver')}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: theme.backgroundSecondary }]}>
+                <FileText size={16} color={currentText} />
               </View>
-              <Text style={styles.toolName}>Tax Saver</Text>
-            </View>
+              <Text style={[styles.toolName, { color: currentText }]}>Tax Saver</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
 
         {/* Guidance Banner */}
-       <TouchableOpacity style={styles.guidanceBanner}>
+        <TouchableOpacity style={[styles.guidanceBanner, { backgroundColor: currentCard, borderColor: currentBorder, borderWidth: 1, overflow: 'hidden' }]}>
 
-  <View style={styles.guidanceInfo}>
-    <Text style={styles.cardTitle}>Not sure which loan fits?</Text>
+          <View style={styles.guidanceInfo}>
+            <Text style={[styles.cardTitle, { color: currentText }]}>Not sure which loan fits?</Text>
 
-    <Text style={styles.guidanceDesc}>
-      Let FYNP AI match you with the right product.
-    </Text>
+            <Text style={[styles.guidanceDesc, { color: theme.textSecondary }]}>
+              Let FYNP AI match you with the right product.
+            </Text>
 
-    {/* BUTTON MOVED BELOW TEXT */}
-    <View style={styles.guidanceBtnBottom}>
-      <Wand2 size={14} color="#ffffff" />
-      <Text style={styles.guidanceBtnText}>Get recommendation</Text>
-    </View>
-  </View>
+            {/* BUTTON MOVED BELOW TEXT */}
+            <View style={styles.guidanceBtnBottom}>
+              <Wand2 size={14} color="#ffffff" />
+              <Text style={styles.guidanceBtnText}>Get recommendation</Text>
+            </View>
+          </View>
 
-</TouchableOpacity>
+        </TouchableOpacity>
 
 
         {/* Why FYNP */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Why FYNP?</Text>
+          <Text style={[styles.sectionTitle, { color: currentText }]}>Why FYNP?</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.whyScrollContent}
           >
-            <View style={styles.whyCard}>
+            <View style={[styles.whyCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
               <Zap size={18} color="#fbbf24" />
-              <Text style={styles.whyText}>Instant Approval</Text>
+              <Text style={[styles.whyText, { color: currentText }]}>Instant Approval</Text>
             </View>
 
-            <View style={styles.whyCard}>
+            <View style={[styles.whyCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
               <ShieldCheck size={18} color="#22c55e" />
-              <Text style={styles.whyText}>100% Secure</Text>
+              <Text style={[styles.whyText, { color: currentText }]}>100% Secure</Text>
             </View>
 
-            <View style={styles.whyCard}>
+            <View style={[styles.whyCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
               <Search size={18} color="#60a5fa" />
-              <Text style={styles.whyText}>No Hidden Fees</Text>
+              <Text style={[styles.whyText, { color: currentText }]}>No Hidden Fees</Text>
             </View>
 
-            <View style={styles.whyCard}>
+            <View style={[styles.whyCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
               <Users size={18} color="#f472b6" />
-              <Text style={styles.whyText}>Expert Support</Text>
+              <Text style={[styles.whyText, { color: currentText }]}>Expert Support</Text>
             </View>
           </ScrollView>
         </View>
 
         {/* Footer Trust */}
-        <Text style={styles.trustText}>100% security iOS 2007 verified ad fintech</Text>
+        <Text style={[styles.trustText, { color: theme.textSecondary }]}>100% security iOS 2007 verified ad fintech</Text>
 
-        <View style={{height: 80}} />
+        <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
+      {/* Bottom Navigation using Custom Bar for Dashboard as before */}
+      <View style={[styles.bottomNav, { backgroundColor: currentCard, borderTopColor: currentBorder }]}>
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => handleNavigation('Home')}>
-          <Home size={24} color={activeTab === 'Home' ? colors.secondaryBg : colors.textMuted} />
-          <Text style={[styles.navLabel, {color: activeTab === 'Home' ? colors.secondaryBg : colors.textMuted}]}>Home</Text>
+          <Home size={24} color={activeTab === 'Home' ? theme.secondaryBg : theme.textMuted} />
+          <Text style={[styles.navLabel, { color: activeTab === 'Home' ? theme.secondaryBg : theme.textMuted }]}>Home</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => handleNavigation('Status')}>
-          <PieChart size={24} color={activeTab === 'Status' ? colors.secondaryBg : colors.textMuted} />
-          <Text style={[styles.navLabel, {color: activeTab === 'Status' ? colors.secondaryBg : colors.textMuted}]}>Status</Text>
+          <PieChart size={24} color={activeTab === 'Status' ? theme.secondaryBg : theme.textMuted} />
+          <Text style={[styles.navLabel, { color: activeTab === 'Status' ? theme.secondaryBg : theme.textMuted }]}>Status</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => handleNavigation('Account')}>
-          <UserRound size={24} color={activeTab === 'Account' ? colors.secondaryBg : colors.textMuted} />
-          <Text style={[styles.navLabel, {color: activeTab === 'Account' ? colors.secondaryBg : colors.textMuted}]}>Account</Text>
+          <UserRound size={24} color={activeTab === 'Account' ? theme.secondaryBg : theme.textMuted} />
+          <Text style={[styles.navLabel, { color: activeTab === 'Account' ? theme.secondaryBg : theme.textMuted }]}>Account</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => handleNavigation('Offers')}>
-          <Sparkles size={24} color={activeTab === 'Offers' ? colors.secondaryBg : colors.textMuted} />
-          <Text style={[styles.navLabel, {color: activeTab === 'Offers' ? colors.secondaryBg : colors.textMuted}]}>Offers</Text>
+          <Sparkles size={24} color={activeTab === 'Offers' ? theme.secondaryBg : theme.textMuted} />
+          <Text style={[styles.navLabel, { color: activeTab === 'Offers' ? theme.secondaryBg : theme.textMuted }]}>Offers</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -585,7 +646,7 @@ const styles = StyleSheet.create({
 
   cardDesc: {
     fontSize: 12,
-     width: '85%',
+    width: '85%',
     color: colors.textSecondary,
     marginBottom: 10,
   },
@@ -649,25 +710,25 @@ const styles = StyleSheet.create({
   },
 
   // Featured Grid
-heroCard: {
-   backgroundColor: 'rgba(30, 27, 75, 0.8)',
+  heroCard: {
+    backgroundColor: 'rgba(30, 27, 75, 0.8)',
     borderColor: `${colors.primaryBg}66`,
-  borderRadius: 16,
-  padding: 16,
-  borderWidth: 1,
-  overflow: 'hidden',
-},
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
 
-recommendedTag: {
-  position: 'absolute',
-  top: 8,
-  right: 6,
-  backgroundColor: colors.secondaryBg,
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderRadius: 999,
-  zIndex: 5,
-},
+  recommendedTag: {
+    position: 'absolute',
+    top: 8,
+    right: 6,
+    backgroundColor: colors.secondaryBg,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    zIndex: 5,
+  },
 
 
   recommendedTagText: {
@@ -794,27 +855,27 @@ recommendedTag: {
   },
 
   // Guidance Banner
-guidanceBanner: {
-  backgroundColor: '#1e1b4b',   // base indigo
-  borderRadius: 12,
-  paddingHorizontal: 16,
-  paddingVertical: 16,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
+  guidanceBanner: {
+    backgroundColor: '#1e1b4b',   // base indigo
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
 
-  borderWidth: 1,
-  borderColor: 'rgba(139,92,246,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.2)',
 
-  // subtle depth
-  shadowColor: '#312e81',
-  shadowOpacity: 0.35,
-  shadowRadius: 12,
-  elevation: 4,
-  flexDirection: 'column',
-alignItems: 'flex-start',
+    // subtle depth
+    shadowColor: '#312e81',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 4,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
 
-},
+  },
 
 
   guidanceInfo: {
@@ -843,18 +904,18 @@ alignItems: 'flex-start',
     gap: 6,
   },
   guidanceBtnBottom: {
-  marginTop: 14,
-  alignSelf: 'flex-start',
+    marginTop: 14,
+    alignSelf: 'flex-start',
 
-  backgroundColor: colors.secondaryBg,
-  paddingHorizontal: 16,
-  paddingVertical: 10,
-  borderRadius: 999,
+    backgroundColor: colors.secondaryBg,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
 
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
 
 
   guidanceBtnText: {

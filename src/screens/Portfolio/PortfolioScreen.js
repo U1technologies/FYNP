@@ -12,16 +12,28 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Briefcase,
   GraduationCap,
   Banknote,
-  ChevronRight,
+  ArrowLeft,
 } from 'lucide-react-native';
+import { useThemeStore } from '../../store/themeStore';
+import colors from '../../theme/colors';
 
-const PortfolioScreen = ({navigation}) => {
+const PortfolioScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = React.useState('All');
+  const { isDarkMode } = useThemeStore();
+
+  // Theme Variables
+  const theme = isDarkMode ? colors : colors.light;
+  const currentBackground = theme.background;
+  const currentCard = theme.card;
+  const currentText = theme.textPrimary;
+  const currentMuted = theme.textMuted || '#8e8a98';
+  const currentBorder = isDarkMode ? theme.border : '#93c5fd';
+  const primaryColor = colors.primary; // Orange
 
   const tabs = ['All', 'Action Required', 'In Progress', 'Closed', 'Rejected'];
 
@@ -31,13 +43,13 @@ const PortfolioScreen = ({navigation}) => {
       type: 'Business Loan',
       appId: '#BL-88392',
       icon: 'Briefcase',
-      iconColor: '#7c3aed',
-      iconBg: 'rgba(124, 58, 237, 0.1)',
+      iconColor: primaryColor,
+      iconBg: isDarkMode ? 'rgba(255, 145, 77, 0.1)' : 'rgba(255, 145, 77, 0.15)',
       status: 'Action Needed',
       statusBg: 'rgba(245, 158, 11, 0.15)',
       statusColor: '#f59e0b',
       statusBorder: 'rgba(245, 158, 11, 0.3)',
-      amount: '₹ 5,00,000',
+      amount: '₹5,00,000',
       date: '14 Oct 2023',
       actionText: 'Complete KYC Verification',
       showProgress: false,
@@ -71,7 +83,7 @@ const PortfolioScreen = ({navigation}) => {
       statusBg: 'rgba(16, 185, 129, 0.15)',
       statusColor: '#10b981',
       statusBorder: 'rgba(16, 185, 129, 0.3)',
-      amount: '₹ 1,50,000',
+      amount: '₹1,50,000',
       emiDate: '5th Nov',
       hasButtons: true,
       showProgress: false,
@@ -87,7 +99,7 @@ const PortfolioScreen = ({navigation}) => {
       statusBg: 'rgba(239, 68, 68, 0.15)',
       statusColor: '#ef4444',
       statusBorder: 'rgba(239, 68, 68, 0.3)',
-      amount: '₹ 8,00,000',
+      amount: '₹8,00,000',
       date: '05 Nov 2023',
       description: 'Application rejected due to low credit score. You can reapply after 6 months.',
       actionText: 'Appeal Decision',
@@ -96,16 +108,16 @@ const PortfolioScreen = ({navigation}) => {
     },
   ];
 
-  const getIcon = (iconType) => {
+  const getIcon = (iconType, color) => {
     switch (iconType) {
       case 'Briefcase':
-        return <Briefcase size={20} />;
+        return <Briefcase size={20} color={color} />;
       case 'GraduationCap':
-        return <GraduationCap size={20} />;
+        return <GraduationCap size={20} color={color} />;
       case 'Banknote':
-        return <Banknote size={20} />;
+        return <Banknote size={20} color={color} />;
       default:
-        return <Briefcase size={20} />;
+        return <Briefcase size={20} color={color} />;
     }
   };
 
@@ -119,13 +131,24 @@ const PortfolioScreen = ({navigation}) => {
   });
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#09090b" />
+    <SafeAreaView style={[styles.container, { backgroundColor: currentBackground }]} edges={['top']}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={currentBackground} />
 
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Applications</Text>
-        <Text style={styles.headerDesc}>Track your loan status in real-time</Text>
+      <View style={[styles.header, { borderBottomColor: currentBorder }]}>
+        <TouchableOpacity
+          style={[styles.backBtn, {
+            backgroundColor: isDarkMode ? theme.backgroundSecondary : '#f4f4f5',
+            borderColor: currentBorder
+          }]}
+          onPress={() => navigation.goBack()}
+        >
+          <ArrowLeft size={20} color={currentText} />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={[styles.headerTitle, { color: currentText }]}>My Applications</Text>
+          <Text style={[styles.headerDesc, { color: currentMuted }]}>Track your loan status in real-time</Text>
+        </View>
       </View>
 
       {/* Tabs */}
@@ -137,14 +160,21 @@ const PortfolioScreen = ({navigation}) => {
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            style={[
+              styles.tab,
+              {
+                backgroundColor: activeTab === tab ? primaryColor : (isDarkMode ? theme.backgroundSecondary : '#f4f4f5'),
+                borderColor: activeTab === tab ? primaryColor : currentBorder
+              }
+            ]}
             onPress={() => setActiveTab(tab)}
           >
             <Text
               style={[
                 styles.tabText,
-                activeTab === tab && styles.tabTextActive,
+                { color: activeTab === tab ? '#ffffff' : currentMuted }
               ]}
+              numberOfLines={1}
             >
               {tab}
             </Text>
@@ -162,7 +192,8 @@ const PortfolioScreen = ({navigation}) => {
             key={app.id}
             style={[
               styles.card,
-              app.leftBorder && styles.cardWithBorder,
+              { backgroundColor: currentCard, borderColor: currentBorder },
+              app.leftBorder && { borderLeftWidth: 4, borderLeftColor: primaryColor },
             ]}
           >
             {/* Card Header */}
@@ -171,25 +202,23 @@ const PortfolioScreen = ({navigation}) => {
                 <View
                   style={[
                     styles.iconBox,
-                    {backgroundColor: app.iconBg},
+                    { backgroundColor: app.iconBg },
                   ]}
                 >
-                  <View style={{color: app.iconColor}}>
-                    {getIcon(app.icon)}
-                  </View>
+                  {getIcon(app.icon, app.iconColor)}
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.loanType}>{app.type}</Text>
-                  <Text style={styles.appId}>{app.appId}</Text>
+                  <Text style={[styles.loanType, { color: currentText }]}>{app.type}</Text>
+                  <Text style={[styles.appId, { color: currentMuted }]}>{app.appId}</Text>
                 </View>
               </View>
               <View
                 style={[
                   styles.statusBadge,
-                  {backgroundColor: app.statusBg, borderColor: app.statusBorder},
+                  { backgroundColor: app.statusBg, borderColor: app.statusBorder },
                 ]}
               >
-                <Text style={[styles.statusText, {color: app.statusColor}]}>
+                <Text style={[styles.statusText, { color: app.statusColor }]}>
                   {app.status}
                 </Text>
               </View>
@@ -197,14 +226,14 @@ const PortfolioScreen = ({navigation}) => {
 
             {/* Divider */}
             {app.showProgress && (
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: currentBorder }]} />
             )}
 
             {/* Progress Bar */}
             {app.showProgress && (
               <>
                 <View style={styles.progressContainer}>
-                  <View style={styles.progressTrack}>
+                  <View style={[styles.progressTrack, { backgroundColor: isDarkMode ? '#27272a' : '#e4e4e7' }]}>
                     <View
                       style={[
                         styles.progressFill,
@@ -215,70 +244,68 @@ const PortfolioScreen = ({navigation}) => {
                       ]}
                     />
                   </View>
-                  <Text style={styles.progressText}>{app.progress}%</Text>
+                  <Text style={[styles.progressText, { color: app.progressColor }]}>{app.progress}%</Text>
                 </View>
-                <Text style={styles.description}>{app.description}</Text>
+                <Text style={[styles.description, { color: currentMuted }]}>{app.description}</Text>
               </>
             )}
 
             {/* Amount & Date Info */}
             {!app.showProgress && app.status !== 'Rejected' && (
-              <View style={styles.infoBox}>
+              <View style={[styles.infoBox, { backgroundColor: currentBackground }]}>
                 <View>
-                  <Text style={styles.infoLabel}>
+                  <Text style={[styles.infoLabel, { color: currentMuted }]}>
                     {app.emiDate ? 'EMI Date' : 'Amount'}
                   </Text>
-                  <Text style={styles.infoValue}>
+                  <Text style={[styles.infoValue, { color: currentText }]}>
                     {app.amount || app.emiDate}
                   </Text>
                 </View>
-                <View style={{textAlign: 'right'}}>
-                  <Text style={styles.infoLabel}>
-                    {app.date ? 'Applied On' : ''}
-                  </Text>
-                  <Text style={styles.infoValue}>{app.date || ''}</Text>
-                </View>
+                {app.date && (
+                  <View style={styles.infoRight}>
+                    <Text style={[styles.infoLabel, { color: currentMuted }]}>Applied On</Text>
+                    <Text style={[styles.infoValue, { color: currentText }]}>{app.date}</Text>
+                  </View>
+                )}
               </View>
             )}
 
             {/* Amount & Date Info for Rejected */}
             {app.status === 'Rejected' && (
               <>
-                <View style={styles.infoBox}>
+                <View style={[styles.infoBox, { backgroundColor: currentBackground }]}>
                   <View>
-                    <Text style={styles.infoLabel}>Amount</Text>
-                    <Text style={styles.infoValue}>{app.amount}</Text>
+                    <Text style={[styles.infoLabel, { color: currentMuted }]}>Amount</Text>
+                    <Text style={[styles.infoValue, { color: currentText }]}>{app.amount}</Text>
                   </View>
-                  <View style={{textAlign: 'right'}}>
-                    <Text style={styles.infoLabel}>Applied On</Text>
-                    <Text style={styles.infoValue}>{app.date}</Text>
+                  <View style={styles.infoRight}>
+                    <Text style={[styles.infoLabel, { color: currentMuted }]}>Applied On</Text>
+                    <Text style={[styles.infoValue, { color: currentText }]}>{app.date}</Text>
                   </View>
                 </View>
-                <Text style={styles.description}>{app.description}</Text>
+                <Text style={[styles.description, { color: currentMuted }]}>{app.description}</Text>
               </>
             )}
 
             {/* Action Button or Buttons */}
             {app.actionText && (
-              <TouchableOpacity style={styles.actionBtn}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: primaryColor }]}>
                 <Text style={styles.actionBtnText}>{app.actionText}</Text>
               </TouchableOpacity>
             )}
 
             {app.hasButtons && (
               <View style={styles.buttonsRow}>
-                <TouchableOpacity style={styles.secondaryBtn}>
-                  <Text style={styles.secondaryBtnText}>View Schedule</Text>
+                <TouchableOpacity style={[styles.secondaryBtn, { borderColor: currentBorder }]}>
+                  <Text style={[styles.secondaryBtnText, { color: currentText }]}>View Schedule</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.secondaryBtn}>
-                  <Text style={styles.secondaryBtnText}>Support</Text>
+                <TouchableOpacity style={[styles.secondaryBtn, { borderColor: currentBorder }]}>
+                  <Text style={[styles.secondaryBtnText, { color: currentText }]}>Support</Text>
                 </TouchableOpacity>
               </View>
             )}
           </TouchableOpacity>
         ))}
-
-        <View style={{height: 80}} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -287,83 +314,81 @@ const PortfolioScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090b',
   },
 
   // Header
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+
+  headerContent: {
+    flex: 1,
   },
 
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 4,
-    letterSpacing: -0.5,
+    marginBottom: 2,
   },
 
   headerDesc: {
     fontSize: 13,
-    color: '#71717a',
   },
 
   // Tabs
   tabsContent: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    gap: 12,
+    gap: 8,
   },
 
   tab: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#141417',
+    paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#27272a',
-  },
-
-  tabActive: {
-    backgroundColor: '#7c3aed',
-    borderColor: '#7c3aed',
+    minWidth: 90,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   tabText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#71717a',
-    whiteSpace: 'nowrap',
-  },
-
-  tabTextActive: {
-    color: '#ffffff',
-    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 16,
+    includeFontPadding: false,
   },
 
   // List
   listContent: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    paddingBottom: 100,
+    paddingTop: 12,
+    paddingBottom: 20,
     gap: 12,
+    flexGrow: 1,
   },
 
   card: {
-    backgroundColor: '#141417',
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#27272a',
-    gap: 10,
-  },
-
-  cardWithBorder: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#7c3aed',
+    gap: 12,
   },
 
   cardHeader: {
@@ -375,13 +400,13 @@ const styles = StyleSheet.create({
   cardInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     flex: 1,
   },
 
   iconBox: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -394,24 +419,22 @@ const styles = StyleSheet.create({
   loanType: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#ffffff',
   },
 
   appId: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 1,
+    fontSize: 12,
+    marginTop: 2,
   },
 
   statusBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
   },
 
   statusText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -419,98 +442,92 @@ const styles = StyleSheet.create({
 
   divider: {
     height: 1,
-    backgroundColor: '#27272a',
   },
 
   // Progress
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
 
   progressTrack: {
     flex: 1,
-    height: 4,
-    backgroundColor: '#27272a',
-    borderRadius: 2,
+    height: 6,
+    borderRadius: 3,
     overflow: 'hidden',
   },
 
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 3,
   },
 
   progressText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#f59e0b',
+    fontSize: 12,
+    fontWeight: '600',
+    minWidth: 35,
+    textAlign: 'right',
   },
 
   description: {
     fontSize: 12,
-    color: '#71717a',
     lineHeight: 18,
   },
 
   // Info Box
   infoBox: {
-    backgroundColor: '#09090b',
     borderRadius: 12,
-    padding: 10,
+    padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
 
+  infoRight: {
+    alignItems: 'flex-end',
+  },
+
   infoLabel: {
-    fontSize: 10,
-    color: '#71717a',
+    fontSize: 11,
     textTransform: 'uppercase',
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: 4,
   },
 
   infoValue: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
   },
 
   // Buttons
   actionBtn: {
-    backgroundColor: '#7c3aed',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 2,
   },
 
   actionBtnText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#ffffff',
   },
 
   buttonsRow: {
     flexDirection: 'row',
-    gap: 6,
-    marginTop: 2,
+    gap: 8,
   },
 
   secondaryBtn: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#27272a',
     alignItems: 'center',
   },
 
   secondaryBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
-    color: '#ffffff',
   },
 });
 

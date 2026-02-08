@@ -1,301 +1,271 @@
-/**
- * FYNP Smart EMI Calculator
- * Calculate EMI, interest, and total payable for loans
- */
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
-  ScrollView,
   TouchableOpacity,
-  Animated,
-  PanResponder,
+  TextInput,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {ArrowLeft} from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Slider from '@react-native-community/slider';
+import Svg, { Circle, G } from 'react-native-svg';
+import { ArrowLeft } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useThemeStore } from '../../store/themeStore';
+import colors from '../../theme/colors';
 
-// Custom Slider Component
-const CustomSlider = ({
-  minimumValue,
-  maximumValue,
-  step,
-  value,
-  onValueChange,
-  minimumTrackTintColor,
-  maximumTrackTintColor,
-  thumbTintColor,
-  style,
-}) => {
-  const [sliderWidth, setSliderWidth] = React.useState(0);
-  const pan = React.useRef(new Animated.ValueXY()).current;
+const { width } = Dimensions.get('window');
 
-  const calculateValue = (gestureX) => {
-    const ratio = Math.max(0, Math.min(gestureX / sliderWidth, 1));
-    const newValue = minimumValue + ratio * (maximumValue - minimumValue);
-    const steppedValue =
-      Math.round(newValue / step) * step;
-    return Math.max(
-      minimumValue,
-      Math.min(steppedValue, maximumValue)
-    );
-  };
+const EMICalculatorScreen = () => {
+  const navigation = useNavigation();
+  const { isDarkMode } = useThemeStore();
 
-  const thumbPosition = React.useMemo(() => {
-    const ratio =
-      (value - minimumValue) / (maximumValue - minimumValue);
-    return ratio * sliderWidth;
-  }, [value, sliderWidth, minimumValue, maximumValue]);
+  // Theme Variables following Dashboard patterns
+  const theme = isDarkMode ? colors : colors.light;
+  const currentBackground = theme.background;
+  const currentCard = theme.card;
+  const currentText = theme.textPrimary;
+  const currentMuted = theme.textMuted || '#8e8a98';
+  const currentBorder = isDarkMode ? theme.border : '#93c5fd'; // Blue outline for light mode
+  const primaryColor = colors.primary; // Orange
+  const accentColor = isDarkMode ? '#22d3ee' : '#0e499c'; // Cyan/Blue for accent
 
-  const panResponder = React.useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => {
-        const newValue = calculateValue(evt.nativeEvent.locationX);
-        onValueChange(newValue);
-      },
-      onPanResponderMove: (evt) => {
-        const newValue = calculateValue(evt.nativeEvent.locationX);
-        onValueChange(newValue);
-      },
-    })
-  ).current;
+  // State
+  const [amount, setAmount] = useState(500000);
+  const [rate, setRate] = useState(10.5);
+  const [tenure, setTenure] = useState(3);
 
-  return (
-    <View
-      style={[styles.sliderContainer, style]}
-      onLayout={(evt) => setSliderWidth(evt.nativeEvent.layout.width)}
-      {...panResponder.panHandlers}
-    >
-      {/* Track Background */}
-      <View
-        style={[
-          styles.sliderTrack,
-          {backgroundColor: maximumTrackTintColor},
-        ]}
-      />
+  const [emi, setEmi] = useState(0);
+  const [totalInterest, setTotalInterest] = useState(0);
+  const [totalPayment, setTotalPayment] = useState(0);
 
-      {/* Filled Track */}
-      <View
-        style={[
-          styles.sliderFilledTrack,
-          {
-            backgroundColor: minimumTrackTintColor,
-            width: `${((value - minimumValue) / (maximumValue - minimumValue)) * 100}%`,
-          },
-        ]}
-      />
+  // Calculation Logic
+  useEffect(() => {
+    const P = amount;
+    const R = rate / 12 / 100;
+    const N = tenure * 12;
 
-      {/* Thumb */}
-      <View
-        style={[
-          styles.sliderThumb,
-          {
-            backgroundColor: thumbTintColor,
-            left: thumbPosition - 8,
-          },
-        ]}
-      />
-    </View>
-  );
-};
-
-const EMICalculatorScreen = ({navigation}) => {
-  const [loanAmount, setLoanAmount] = React.useState(500000);
-  const [interestRate, setInterestRate] = React.useState(12.5);
-  const [tenure, setTenure] = React.useState(36); // in months
-
-  // Calculate EMI using formula: EMI = P * r * (1 + r)^n / ((1 + r)^n - 1)
-  const calculateEMI = () => {
-    const monthlyRate = interestRate / 100 / 12;
-    const numberOfMonths = tenure;
-
-    if (monthlyRate === 0) {
-      return loanAmount / numberOfMonths;
+    if (P === 0 || R === 0 || N === 0) {
+      setEmi(0);
+      return;
     }
 
-    const emi =
-      (loanAmount *
-        monthlyRate *
-        Math.pow(1 + monthlyRate, numberOfMonths)) /
-      (Math.pow(1 + monthlyRate, numberOfMonths) - 1);
+    const calculatedEmi = (P * R * Math.pow(1 + R, N)) / (Math.pow(1 + R, N) - 1);
+    const totalPay = calculatedEmi * N;
+    const totalInt = totalPay - P;
 
-    return emi;
+    setEmi(Math.round(calculatedEmi));
+    setTotalPayment(Math.round(totalPay));
+    setTotalInterest(Math.round(totalInt));
+  }, [amount, rate, tenure]);
+
+  // Donut Chart Logic
+  const radius = 90;
+  const strokeWidth = 20;
+  const center = radius + strokeWidth;
+  const circumference = 2 * Math.PI * radius;
+
+  const principalPercentage = totalPayment > 0 ? (amount / totalPayment) : 0;
+  const interestPercentage = totalPayment > 0 ? (totalInterest / totalPayment) : 0;
+
+  const principalStrokeDashoffset = circumference * (1 - principalPercentage);
+  const interestStrokeDashoffset = circumference * (1 - interestPercentage); // Not used directly, usually we stack them
+
+  // Format Currency
+  const formatCurrency = (value) => {
+    return '₹' + value.toLocaleString('en-IN');
   };
-
-  const emi = calculateEMI();
-  const totalAmount = emi * tenure;
-  const totalInterest = totalAmount - loanAmount;
-
-  const formatCurrency = (amount) => {
-    return '₹ ' + Math.round(amount).toLocaleString('en-IN');
-  };
-
-  const formatLoanAmount = (amount) => {
-    if (amount >= 10000000) {
-      return '₹ ' + (amount / 10000000).toFixed(2) + ' Cr';
-    }
-    return '₹ ' + (amount / 100000).toFixed(2) + ' L';
-  };
-
-  const tenureInYears = Math.round(tenure / 12 * 10) / 10;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#09090b" />
+    <SafeAreaView style={[styles.container, { backgroundColor: currentBackground }]} edges={['top']}>
 
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header - Matching LoanMarketplace Standard */}
+      <View style={[styles.header, { backgroundColor: currentBackground, borderBottomColor: currentBorder }]}>
         <TouchableOpacity
-          style={styles.backBtn}
+          style={[styles.backBtn, {
+            backgroundColor: isDarkMode ? theme.backgroundSecondary : '#f4f4f5',
+            borderColor: currentBorder
+          }]}
           onPress={() => navigation.goBack()}
         >
-          <ArrowLeft size={20} color="#ffffff" />
+          <ArrowLeft size={20} color={currentText} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Smart EMI Calculator</Text>
+        <Text style={[styles.headerTitle, { color: currentText }]}>EMI Calculator</Text>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Loan Amount Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.label}>Loan Amount</Text>
-            <View style={styles.valueBox}>
-              <Text style={styles.valueText}>{formatLoanAmount(loanAmount)}</Text>
+      <ScrollView contentContainerStyle={styles.content}>
+
+        {/* Input Card */}
+        <View style={[styles.card, { backgroundColor: currentCard, borderColor: currentBorder }]}>
+
+          {/* Amount Slider */}
+          <View style={styles.inputGroup}>
+            <View style={styles.inputHeader}>
+              <Text style={[styles.label, { color: currentMuted }]}>Loan Amount</Text>
+              <Text style={[styles.valueTag, { color: accentColor, backgroundColor: isDarkMode ? 'rgba(34, 211, 238, 0.1)' : 'rgba(14, 73, 156, 0.1)' }]}>
+                {formatCurrency(amount)}
+              </Text>
+            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={50000}
+              maximumValue={5000000}
+              step={10000}
+              value={amount}
+              onValueChange={setAmount}
+              minimumTrackTintColor={primaryColor}
+              maximumTrackTintColor={isDarkMode ? '#27272a' : '#e4e4e7'}
+              thumbTintColor={primaryColor}
+            />
+            <View style={styles.rangeLabels}>
+              <Text style={[styles.rangeText, { color: currentMuted }]}>₹50K</Text>
+              <Text style={[styles.rangeText, { color: currentMuted }]}>₹50L</Text>
             </View>
           </View>
-          <CustomSlider
-            style={styles.slider}
-            minimumValue={100000}
-            maximumValue={5000000}
-            step={100000}
-            value={loanAmount}
-            onValueChange={setLoanAmount}
-            minimumTrackTintColor="#7c3aed"
-            maximumTrackTintColor="#27272a"
-            thumbTintColor="#ffffff"
-          />
-          <View style={styles.rangeLabel}>
-            <Text style={styles.rangeText}>₹1L</Text>
-            <Text style={styles.rangeText}>₹50L</Text>
-          </View>
-        </View>
 
-        {/* Interest Rate Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.label}>Interest Rate (% p.a)</Text>
-            <View style={styles.valueBox}>
-              <Text style={styles.valueText}>{interestRate.toFixed(2)} %</Text>
+          {/* Rate Slider */}
+          <View style={styles.inputGroup}>
+            <View style={styles.inputHeader}>
+              <Text style={[styles.label, { color: currentMuted }]}>Interest Rate (p.a)</Text>
+              <Text style={[styles.valueTag, { color: accentColor, backgroundColor: isDarkMode ? 'rgba(34, 211, 238, 0.1)' : 'rgba(14, 73, 156, 0.1)' }]}>
+                {rate.toFixed(1)}%
+              </Text>
+            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={8}
+              maximumValue={24}
+              step={0.1}
+              value={rate}
+              onValueChange={setRate}
+              minimumTrackTintColor={primaryColor}
+              maximumTrackTintColor={isDarkMode ? '#27272a' : '#e4e4e7'}
+              thumbTintColor={primaryColor}
+            />
+            <View style={styles.rangeLabels}>
+              <Text style={[styles.rangeText, { color: currentMuted }]}>8%</Text>
+              <Text style={[styles.rangeText, { color: currentMuted }]}>24%</Text>
             </View>
           </View>
-          <CustomSlider
-            style={styles.slider}
-            minimumValue={8}
-            maximumValue={24}
-            step={0.25}
-            value={interestRate}
-            onValueChange={setInterestRate}
-            minimumTrackTintColor="#8b5cf6"
-            maximumTrackTintColor="#27272a"
-            thumbTintColor="#ffffff"
-          />
-          <View style={styles.rangeLabel}>
-            <Text style={styles.rangeText}>8%</Text>
-            <Text style={styles.rangeText}>24%</Text>
-          </View>
-        </View>
 
-        {/* Tenure Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.label}>Tenure</Text>
-            <View style={styles.tenureToggle}>
-              <View style={styles.tenureOption}>
-                <Text style={styles.tenureOptionText}>Years</Text>
-              </View>
-              <View style={styles.tenureOptionInactive}>
-                <Text style={styles.tenureOptionInactiveText}>Months</Text>
-              </View>
+          {/* Tenure Slider */}
+          <View style={styles.inputGroup}>
+            <View style={styles.inputHeader}>
+              <Text style={[styles.label, { color: currentMuted }]}>Loan Tenure</Text>
+              <Text style={[styles.valueTag, { color: accentColor, backgroundColor: isDarkMode ? 'rgba(34, 211, 238, 0.1)' : 'rgba(14, 73, 156, 0.1)' }]}>
+                {tenure} Years
+              </Text>
+            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={1}
+              maximumValue={10}
+              step={1}
+              value={tenure}
+              onValueChange={setTenure}
+              minimumTrackTintColor={primaryColor}
+              maximumTrackTintColor={isDarkMode ? '#27272a' : '#e4e4e7'}
+              thumbTintColor={primaryColor}
+            />
+            <View style={styles.rangeLabels}>
+              <Text style={[styles.rangeText, { color: currentMuted }]}>1 Yr</Text>
+              <Text style={[styles.rangeText, { color: currentMuted }]}>10 Yrs</Text>
             </View>
           </View>
-          <Text style={styles.tenureValue}>{tenureInYears.toFixed(1)} Years</Text>
-          <CustomSlider
-            style={styles.slider}
-            minimumValue={12}
-            maximumValue={84}
-            step={1}
-            value={tenure}
-            onValueChange={setTenure}
-            minimumTrackTintColor="#22c55e"
-            maximumTrackTintColor="#27272a"
-            thumbTintColor="#ffffff"
-          />
-          <View style={styles.rangeLabel}>
-            <Text style={styles.rangeText}>1Y</Text>
-            <Text style={styles.rangeText}>7Y</Text>
-          </View>
+
         </View>
 
-        {/* Results Card */}
-        <View style={styles.resultsCard}>
-          {/* Donut Chart Visualization */}
+        {/* Results Section */}
+        <View style={styles.resultSection}>
+          <View style={styles.emiDisplay}>
+            <Text style={[styles.emiLabel, { color: currentMuted }]}>Monthly EMI</Text>
+            <Text style={[styles.emiAmount, { color: currentText }]}>{formatCurrency(emi)}</Text>
+          </View>
+
+          {/* Donut Chart */}
           <View style={styles.chartContainer}>
-            <View style={[styles.donutChart, {backgroundColor: '#7c3aed'}]}>
-              <View style={styles.donutCenter}>
-                <Text style={styles.emiLabel}>Monthly EMI</Text>
-                <Text style={styles.emiValue}>{formatCurrency(emi)}</Text>
-              </View>
+            <Svg height={center * 2} width={center * 2}>
+              {/* Total Track (Interest Color Background) */}
+              <Circle
+                cx={center}
+                cy={center}
+                r={radius}
+                stroke={isDarkMode ? '#1f1f1f' : '#eff6ff'}
+                strokeWidth={strokeWidth}
+                fill="none"
+              />
+              {/* Interest Segment (Secondary Color) */}
+              <Circle
+                cx={center}
+                cy={center}
+                r={radius}
+                stroke={isDarkMode ? '#3f3f46' : '#bfdbfe'} // Grey/LightBlue
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeDasharray={`${circumference} ${circumference}`}
+                rotation="-90"
+                origin={`${center}, ${center}`}
+              />
+              {/* Principal Segment (Primary Color) - Layered on top */}
+              <Circle
+                cx={center}
+                cy={center}
+                r={radius}
+                stroke={primaryColor}
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeDasharray={`${circumference} ${circumference}`}
+                strokeDashoffset={principalStrokeDashoffset}
+                strokeLinecap="round"
+                rotation="-90"
+                origin={`${center}, ${center}`}
+              />
+            </Svg>
+
+            <View style={[styles.donutHole, { backgroundColor: currentBackground }]}>
+              <Text style={{ fontSize: 14, color: currentMuted }}>Total Payable</Text>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: currentText }}>{formatCurrency(totalPayment)}</Text>
             </View>
           </View>
 
-          {/* Results Details */}
-          <View style={styles.resultDetails}>
-            <View style={styles.resultItem}>
-              <View style={[styles.resultDot, {backgroundColor: '#7c3aed'}]} />
-              <View style={styles.resultContent}>
-                <Text style={styles.resultLabel}>Principal Amount</Text>
-                <Text style={styles.resultValue}>{formatCurrency(loanAmount)}</Text>
-              </View>
+          {/* Legend */}
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: primaryColor }]} />
+              <Text style={[styles.legendText, { color: currentMuted }]}>Principal</Text>
             </View>
-
-            <View style={styles.resultItem}>
-              <View style={[styles.resultDot, {backgroundColor: '#8b5cf6'}]} />
-              <View style={styles.resultContent}>
-                <Text style={styles.resultLabel}>Total Interest</Text>
-                <Text style={[styles.resultValue, {color: '#8b5cf6'}]}>
-                  {formatCurrency(totalInterest)}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.resultItem}>
-              <Text style={styles.totalLabel}>Total Payable</Text>
-              <Text style={styles.totalValue}>{formatCurrency(totalAmount)}</Text>
+            <View style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: isDarkMode ? '#3f3f46' : '#bfdbfe' }]} />
+              <Text style={[styles.legendText, { color: currentMuted }]}>Interest</Text>
             </View>
           </View>
+
+          {/* Breakdown Grid */}
+          <View style={styles.breakdownGrid}>
+            <View style={[styles.breakdownCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
+              <Text style={[styles.breakdownLabel, { color: currentMuted }]}>Principal Amount</Text>
+              <Text style={[styles.breakdownValue, { color: currentText }]}>{formatCurrency(amount)}</Text>
+            </View>
+            <View style={[styles.breakdownCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
+              <Text style={[styles.breakdownLabel, { color: currentMuted }]}>Total Interest</Text>
+              <Text style={[styles.breakdownValue, { color: accentColor }]}>{formatCurrency(totalInterest)}</Text>
+            </View>
+          </View>
+
         </View>
 
-        <View style={{height: 20}} />
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() => navigation.navigate('LoanMarketplace')}
-        >
-          <Text style={styles.actionBtnText}>Check Loan Offers</Text>
+      {/* Bottom Bar */}
+      <View style={[styles.bottomBar, { backgroundColor: currentBackground, borderTopColor: currentBorder }]}>
+        <TouchableOpacity style={[styles.ctaButton, { backgroundColor: primaryColor }]}>
+          <Text style={styles.ctaText}>Check Loan Eligibility</Text>
         </TouchableOpacity>
       </View>
+
     </SafeAreaView>
   );
 };
@@ -303,289 +273,153 @@ const EMICalculatorScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090b',
   },
-
-  // Header
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
   },
-
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#18181b',
+    width: 40,
+    height: 40,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#27272a',
   },
-
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontWeight: '700',
   },
-
-  // Scroll Content
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    paddingBottom: 140,
+  content: {
+    padding: 20,
+    paddingBottom: 100, // Adjusted for bottom bar
     gap: 24,
   },
-
-  // Section
-  section: {
+  card: {
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    gap: 24,
+  },
+  inputGroup: {
     gap: 12,
   },
-
-  sectionHeader: {
+  inputHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#a1a1aa',
   },
-
-  valueBox: {
-    backgroundColor: '#141417',
+  valueTag: {
+    fontSize: 16,
+    fontWeight: '700',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#27272a',
+    overflow: 'hidden',
   },
-
-  valueText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-
-  sliderContainer: {
+  slider: {
     width: '100%',
     height: 40,
-    justifyContent: 'center',
   },
-
-  sliderTrack: {
-    height: 4,
-    borderRadius: 2,
-    position: 'absolute',
-  },
-
-  sliderFilledTrack: {
-    height: 4,
-    borderRadius: 2,
-    position: 'absolute',
-  },
-
-  sliderThumb: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    position: 'absolute',
-    top: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 5,
-  },
-
-  rangeLabel: {
+  rangeLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: -8,
   },
-
   rangeText: {
     fontSize: 12,
-    color: '#71717a',
   },
-
-  // Tenure Toggle
-  tenureToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#27272a',
-    borderRadius: 8,
-    padding: 2,
-  },
-
-  tenureOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: '#141417',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#27272a',
-  },
-
-  tenureOptionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-
-  tenureOptionInactive: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-
-  tenureOptionInactiveText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#71717a',
-  },
-
-  tenureValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 8,
-  },
-
-  // Results Card
-  resultsCard: {
-    backgroundColor: '#141417',
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#27272a',
+  resultSection: {
+    alignItems: 'center',
     gap: 24,
   },
-
+  emiDisplay: {
+    alignItems: 'center',
+  },
+  emiLabel: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  emiAmount: {
+    fontSize: 32,
+    fontWeight: '700',
+  },
   chartContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'center',
+    marginBottom: 10,
   },
-
-  donutChart: {
-    width: 140,
+  donutHole: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 140, // Roughly inner size
     height: 140,
-    borderRadius: 70,
-    alignItems: 'center',
+    borderRadius: 50,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    gap: 16,
     justifyContent: 'center',
   },
-
-  donutCenter: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: '#141417',
+  legendItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
+    gap: 8,
   },
-
-  emiLabel: {
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
     fontSize: 12,
-    color: '#71717a',
   },
-
-  emiValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-
-  // Result Details
-  resultDetails: {
-    gap: 12,
-  },
-
-  resultItem: {
+  breakdownGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
+    width: '100%',
   },
-
-  resultDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-
-  resultContent: {
+  breakdownCard: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
   },
-
-  resultLabel: {
-    fontSize: 14,
-    color: '#a1a1aa',
+  breakdownLabel: {
+    fontSize: 12,
   },
-
-  resultValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: '#27272a',
-    marginVertical: 8,
-  },
-
-  totalLabel: {
+  breakdownValue: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#ffffff',
+    fontWeight: '600',
   },
-
-  totalValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-
-  // Footer
-  footer: {
+  bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 32,
+    padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#27272a',
-    backgroundColor: '#09090b',
   },
-
-  actionBtn: {
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: '#7c3aed',
+  ctaButton: {
+    height: 48,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#7c3aed',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
   },
-
-  actionBtnText: {
+  ctaText: {
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
   },
 });
 

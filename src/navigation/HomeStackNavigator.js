@@ -4,11 +4,12 @@
  */
 
 import React from 'react';
-import {createStackNavigator} from '@react-navigation/stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import CreditCardsScreen from '../screens/CreditCards/CreditCardsScreen';
 import SelectLenderScreen from '../screens/PersonalLoans/SelectLenderScreen';
 import KYCVerificationScreen from '../screens/PersonalLoans/KYCVerificationScreen';
+import PersonalLoansScreen from '../screens/Loans/PersonalLoansScreen';
 import LoanMarketplaceScreen from '../screens/Loans/LoanMarketplaceScreen';
 import LoanConfigurationScreen from '../screens/Loans/LoanConfigurationScreen';
 import LoanBasicDetailsScreen from '../screens/Loans/LoanBasicDetailsScreen';
@@ -27,14 +28,17 @@ import EducationLoanApplicationScreen from '../screens/Loans/EducationLoanApplic
 import EducationLoanApplicationSuccessScreen from '../screens/Loans/EducationLoanApplicationSuccessScreen';
 import LoanDetailsScreen from '../screens/Loans/LoanDetailsScreen';
 import EMICalculatorScreen from '../screens/Tools/EMICalculatorScreen';
+import LoanEligibilityScreen from '../screens/Tools/LoanEligibilityScreen';
+import TaxSaverScreen from '../screens/Tools/TaxSaverScreen';
 import PortfolioScreen from '../screens/Portfolio/PortfolioScreen';
 
 const Stack = createStackNavigator();
 
 const HomeStackNavigator = () => {
   return (
-    <Stack.Navigator screenOptions={{headerShown: false}}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      <Stack.Screen name="PersonalLoans" component={PersonalLoansScreen} />
       <Stack.Screen name="LoanMarketplace" component={LoanMarketplaceScreen} />
       <Stack.Screen name="LoanConfiguration" component={LoanConfigurationScreen} />
       <Stack.Screen name="LoanBasicDetails" component={LoanBasicDetailsScreen} />
@@ -56,6 +60,8 @@ const HomeStackNavigator = () => {
       <Stack.Screen name="SelectLender" component={SelectLenderScreen} />
       <Stack.Screen name="KYCVerification" component={KYCVerificationScreen} />
       <Stack.Screen name="EMICalculator" component={EMICalculatorScreen} />
+      <Stack.Screen name="LoanEligibility" component={LoanEligibilityScreen} />
+      <Stack.Screen name="TaxSaver" component={TaxSaverScreen} />
       <Stack.Screen name="Portfolio" component={PortfolioScreen} />
     </Stack.Navigator>
   );
