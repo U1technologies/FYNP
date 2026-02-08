@@ -3,11 +3,14 @@
  * Bottom tab navigation for main app screens
  */
 
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Home, PieChart, Tag, User } from 'lucide-react-native';
 import HomeStackNavigator from './HomeStackNavigator';
 import PortfolioScreen from '../screens/Portfolio/PortfolioScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 import OffersScreen from '../screens/Offers/OffersScreen';
+import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -16,7 +19,7 @@ const TabNavigator = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {display: 'none'},
+        tabBarStyle: { display: 'none' },
       }}>
       <Tab.Screen
         name="Home"

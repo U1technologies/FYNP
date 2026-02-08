@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {CheckCircle, Phone, ArrowRight} from 'lucide-react-native';
+import {colors} from '../../theme';
 
 const KYCVerificationScreen = ({navigation, route}) => {
   const formData = route.params || {};
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
   idCard: {
     backgroundColor: '#141417',
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: 'colors.secondaryBg',
     borderRadius: 16,
     paddingVertical: 20,
     paddingHorizontal: 20,
@@ -175,14 +176,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    color: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#27272a',
+    marginTop: 2,
+  },
+
+  checkboxActive: {
+    backgroundColor: 'colors.secondaryBg',
+    borderColor: 'colors.secondaryBg',
   },
 
   supportBtnText: {

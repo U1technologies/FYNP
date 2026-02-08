@@ -15,6 +15,7 @@ import {
   Animated,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {colors} from '../../theme';
 
 const LoanDetailsScreen = ({navigation, route}) => {
   const {lender} = route.params;
@@ -420,7 +421,7 @@ const styles = StyleSheet.create({
 
   sliderFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: 'colors.secondaryBg',
     borderRadius: 3,
   },
 
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: '#ffffff',
     borderWidth: 2,
-    borderColor: '#8b5cf6',
+    borderColor: 'colors.secondaryBg',
     borderRadius: 12,
     position: 'absolute',
     top: -9,
@@ -493,7 +494,7 @@ const styles = StyleSheet.create({
 
   tenureChipActive: {
     backgroundColor: 'rgba(139, 92, 246, 0.15)',
-    borderColor: '#8b5cf6',
+    borderColor: 'colors.secondaryBg',
   },
 
   tenureChipText: {
@@ -503,7 +504,7 @@ const styles = StyleSheet.create({
   },
 
   tenureChipTextActive: {
-    color: '#8b5cf6',
+    color: 'colors.secondaryBg',
   },
 
   // Breakdown Card
@@ -625,7 +626,7 @@ const styles = StyleSheet.create({
   },
 
   termsLink: {
-    color: '#8b5cf6',
+    color: 'colors.secondaryBg',
     textDecorationLine: 'underline',
   },
 

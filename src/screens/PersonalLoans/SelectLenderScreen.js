@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {colors} from '../../theme';
 
 const SelectLenderScreen = ({navigation}) => {
   const lenderOffers = [
@@ -28,7 +29,7 @@ const SelectLenderScreen = ({navigation}) => {
       tenure: 'Up to 60m',
       emi: '₹10,746',
       tag: 'Best Rate',
-      tagColor: '#8b5cf6',
+      tagColor: 'colors.secondaryBg',
       feature: {
         icon: '⚡',
         text: 'Instant Disbursal',
@@ -290,7 +291,7 @@ const styles = StyleSheet.create({
   successIcon: {
     width: 40,
     height: 40,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: 'colors.secondaryBg',
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -487,14 +488,14 @@ const styles = StyleSheet.create({
 
   processTagText: {
     fontSize: 12,
-    color: '#8b5cf6',
+    color: 'colors.secondaryBg',
     fontWeight: '500',
   },
 
   ctaText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8b5cf6',
+    color: 'colors.secondaryBg',
   },
 
   // Support Link
@@ -512,7 +513,7 @@ const styles = StyleSheet.create({
 
   linkText: {
     fontSize: 13,
-    color: '#8b5cf6',
+    color: 'colors.secondaryBg',
     fontWeight: '600',
   },
 
