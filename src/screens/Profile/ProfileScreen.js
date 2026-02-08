@@ -8,6 +8,7 @@ import {
   Image,
   Switch,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -43,6 +44,24 @@ const ProfileScreen = () => {
   const currentBorder = theme.border;
 
   const toggleSwitch = () => toggleTheme(); // Updates global store
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: logout,
+          style: 'destructive',
+        },
+      ]
+    );
+  };
 
   const SectionTitle = ({ title }) => (
     <Text style={[styles.sectionTitle, { color: currentMutedText }]}>
@@ -105,22 +124,33 @@ const ProfileScreen = () => {
       <ScrollView contentContainerStyle={styles.content}>
 
         {/* Profile Card */}
-        <View style={[styles.profileCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
+        {/* Profile Card */}
+        <TouchableOpacity
+          style={[styles.profileCard, { backgroundColor: currentCard, borderColor: currentBorder }]}
+          onPress={() => navigation.navigate('EditProfile')}
+          activeOpacity={0.8}
+        >
           <View style={[styles.avatarContainer, { borderColor: colors.primary }]}>
             {/* Fallback avatar if no image */}
             <Text style={{ color: colors.primary, fontSize: 24, fontWeight: 'bold' }}>
-              {user?.name?.charAt(0) || 'R'}
+              {(user?.personal?.firstName || 'G').charAt(0).toUpperCase()}
             </Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, { color: currentText }]}>{user?.name || 'Rahul Verma'}</Text>
-            <Text style={[styles.profilePhone, { color: currentMutedText }]}>{user?.phone || '+91 98765 43210'}</Text>
+            <Text style={[styles.profileName, { color: currentText }]}>
+              {user?.personal?.firstName
+                ? `${user.personal.firstName} ${user.personal.lastName || ''}`.trim()
+                : 'Guest'}
+            </Text>
+            <Text style={[styles.profilePhone, { color: currentMutedText }]}>
+              {user?.personal?.mobile || user?.mobile || 'No Mobile'}
+            </Text>
             <View style={[styles.kycBadge, { backgroundColor: 'rgba(124, 58, 237, 0.15)' }]}>
-              <Text style={[styles.kycText, { color: colors.accent }]}>KYC VERIFIED</Text>
+              <Text style={[styles.kycText, { color: colors.accent }]}>OTP VERIFIED</Text>
             </View>
           </View>
           <ChevronRight size={20} color={currentMutedText} />
-        </View>
+        </TouchableOpacity>
 
         {/* App Settings */}
         <View style={styles.section}>
@@ -143,7 +173,11 @@ const ProfileScreen = () => {
         <View style={styles.section}>
           <SectionTitle title="Financial Details" />
           <View style={[styles.menuGroup, { borderColor: currentBorder, backgroundColor: currentCard }]}>
-            <MenuItem icon={User} label="Personal Information" />
+            <MenuItem
+              icon={User}
+              label="Personal Information"
+              onPress={() => navigation.navigate('EditProfile')}
+            />
             <View style={[styles.separator, { backgroundColor: currentBorder }]} />
             <MenuItem icon={Landmark} label="Bank Accounts" />
             <View style={[styles.separator, { backgroundColor: currentBorder }]} />
@@ -164,7 +198,7 @@ const ProfileScreen = () => {
         {/* Logout Button */}
         <TouchableOpacity
           style={[styles.logoutBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)' }]}
-          onPress={logout}
+          onPress={handleLogout}
         >
           <LogOut size={18} color={colors.destructive} />
           <Text style={[styles.logoutText, { color: colors.destructive }]}>Log Out</Text>

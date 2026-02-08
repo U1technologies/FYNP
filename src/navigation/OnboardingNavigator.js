@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {createStackNavigator} from '@react-navigation/stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import SplashScreen from '../screens/Onboarding/SplashScreen';
 import WelcomeScreen from '../screens/Onboarding/WelcomeScreen';
 import MobileNumberScreen from '../screens/Onboarding/MobileNumberScreen';
@@ -16,6 +16,7 @@ const Stack = createStackNavigator();
 const OnboardingNavigator = () => {
   return (
     <Stack.Navigator
+      initialRouteName="Welcome"
       screenOptions={{
         headerShown: false,
       }}>
