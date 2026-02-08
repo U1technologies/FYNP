@@ -62,6 +62,18 @@ const API_ENDPOINTS = {
     RECENT_TRANSACTIONS: '/dashboard/recent-transactions',
     ANALYTICS: '/dashboard/analytics',
   },
+
+  // Loan Endpoints
+  LOANS: {
+    CREATE: '/loans/applications',
+    LIST: '/loans/applications',
+    GET: id => `/loans/applications/${id}`,
+    STATUS: id => `/loans/applications/${id}/status`,
+    DELETE: id => `/loans/applications/${id}`,
+    SAVE_DETAILS: id => `/loans/applications/${id}/details`,
+    UPLOAD_DOCUMENTS: id => `/loans/applications/${id}/documents`,
+    SUBMIT: id => `/loans/applications/${id}/submit`,
+  },
 };
 
 export default API_ENDPOINTS;

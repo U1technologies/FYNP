@@ -14,6 +14,8 @@ import {
   TextInput,
   Modal,
   Alert,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
@@ -23,74 +25,260 @@ import {
   ChevronDown,
   ShieldCheck,
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as loanService from '../../services/loanService';
 
 const HomeLoanApplicationScreen = ({navigation, route}) => {
   const {lenderData} = route.params || {};
 
+  // Personal details
   const [fullName, setFullName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [pan, setPan] = React.useState('');
+  const [mobile, setMobile] = React.useState('');
   const [dateOfBirth, setDateOfBirth] = React.useState('');
-  const [propertyCity, setPropertyCity] = React.useState(null);
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+
+  // Address details
+  const [addressLine, setAddressLine] = React.useState('');
+  const [city, setCity] = React.useState('');
+  const [pincode, setPincode] = React.useState('');
+  const [residenceType, setResidenceType] = React.useState('RENTED');
+  const [showResidenceModal, setShowResidenceModal] = React.useState(false);
+
+  // Employment details
   const [employmentType, setEmploymentType] = React.useState(null);
-  const [propertyPincode, setPropertyPincode] = React.useState('');
-  const [loanAmount, setLoanAmount] = React.useState('5000000');
-  const [showCityModal, setShowCityModal] = React.useState(false);
   const [showEmploymentModal, setShowEmploymentModal] = React.useState(false);
 
-  const cityOptions = [
-    {label: 'Mumbai', value: 'Mumbai'},
-    {label: 'Bangalore', value: 'Bangalore'},
-    {label: 'Delhi', value: 'Delhi'},
-    {label: 'Pune', value: 'Pune'},
-    {label: 'Hyderabad', value: 'Hyderabad'},
-    {label: 'Chennai', value: 'Chennai'},
-    {label: 'Kolkata', value: 'Kolkata'},
-    {label: 'Ahmedabad', value: 'Ahmedabad'},
-  ];
+  // Salaried fields
+  const [employerName, setEmployerName] = React.useState('');
+  const [monthlyIncome, setMonthlyIncome] = React.useState('');
+
+  // Self-Employed Professional fields
+  const [profession, setProfession] = React.useState('');
+  const [annualIncome, setAnnualIncome] = React.useState('');
+
+  // Loan details
+  const [loanAmount, setLoanAmount] = React.useState('5000000');
+  const [loading, setLoading] = React.useState(false);
+
+  // Load mobile from AsyncStorage
+  React.useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setMobile(user.mobile || '');
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+    loadUserData();
+  }, []);
 
   const employmentOptions = [
     {label: 'Salaried', value: 'Salaried'},
-    {label: 'Self-Employed', value: 'Self-Employed'},
-    {label: 'Business Owner', value: 'Business Owner'},
-    {label: 'Freelancer', value: 'Freelancer'},
+    {label: 'Self-Employed Professional', value: 'Self-Employed Professional'},
   ];
 
-  const handleProceed = () => {
-    // Validation
+  const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day} / ${month} / ${year}`;
+  };
+
+  const handleDateChange = (event, date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (date) {
+      setSelectedDate(date);
+      setDateOfBirth(formatDate(date));
+    }
+  };
+
+  const handleProceed = async () => {
+    // Validation - Personal Details
     if (!fullName.trim()) {
       Alert.alert('Required Field', 'Please enter your full name');
       return;
     }
-    if (!dateOfBirth.trim()) {
+    if (!email.trim()) {
+      Alert.alert('Required Field', 'Please enter your email');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      return;
+    }
+    if (!pan.trim()) {
+      Alert.alert('Required Field', 'Please enter your PAN number');
+      return;
+    }
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panRegex.test(pan.trim().toUpperCase())) {
+      Alert.alert('Invalid PAN', 'Please enter a valid PAN number (e.g., ABCDE1234F)');
+      return;
+    }
+    if (!dateOfBirth) {
       Alert.alert('Required Field', 'Please select your date of birth');
       return;
     }
-    if (!propertyCity) {
-      Alert.alert('Required Field', 'Please select property location');
+
+    // Validation - Address Details
+    if (!addressLine.trim()) {
+      Alert.alert('Required Field', 'Please enter your address');
       return;
     }
+    if (!city.trim()) {
+      Alert.alert('Required Field', 'Please enter your city');
+      return;
+    }
+    if (!pincode.trim()) {
+      Alert.alert('Required Field', 'Please enter your pincode');
+      return;
+    }
+
+    // Validation - Employment Type
     if (!employmentType) {
       Alert.alert('Required Field', 'Please select employment type');
       return;
     }
-    if (!propertyPincode.trim()) {
-      Alert.alert('Required Field', 'Please enter property pincode');
-      return;
+
+    // Validation - Employment-Specific Fields
+    if (employmentType === 'Salaried') {
+      if (!employerName.trim()) {
+        Alert.alert('Required Field', 'Please enter employer name');
+        return;
+      }
+      if (!monthlyIncome.trim()) {
+        Alert.alert('Required Field', 'Please enter monthly income');
+        return;
+      }
+    } else if (employmentType === 'Self-Employed Professional') {
+      if (!profession.trim()) {
+        Alert.alert('Required Field', 'Please enter your profession');
+        return;
+      }
+      if (!annualIncome.trim()) {
+        Alert.alert('Required Field', 'Please enter annual income');
+        return;
+      }
     }
 
-    // Proceed to next screen
-    const applicationData = {
-      fullName: fullName.trim(),
-      dateOfBirth,
-      propertyCity,
-      employmentType,
-      propertyPincode: propertyPincode.trim(),
-      loanAmount,
-      lenderName: lenderData?.name || 'Home Loan',
-    };
+    setLoading(true);
 
-    navigation.navigate('HomeLoanApplicationSuccess', {
-      applicationData,
-    });
+    try {
+      // Step 1: Create draft application
+      const draftResponse = await loanService.createLoanApplication('HOME_LOAN');
+
+      if (!draftResponse.success || !draftResponse.data) {
+        throw new Error('Failed to create loan application');
+      }
+
+      const applicationId = draftResponse.data.applicationId;
+
+      // Step 2: Prepare loan details (nested structure matching website)
+      const loanDetails = {
+        personal: {
+          fullName: fullName.trim(),
+          email: email.trim(),
+          pan: pan.trim().toUpperCase(),
+          mobile: mobile,
+          dob: dateOfBirth,
+        },
+        address: {
+          current: {
+            line1: addressLine.trim(),
+            city: city.trim(),
+            pincode: pincode.trim(),
+            residenceType: residenceType,
+          },
+          permanent: {
+            line1: addressLine.trim(),
+            city: city.trim(),
+            pincode: pincode.trim(),
+            residenceType: residenceType,
+          },
+        },
+        loan: {
+          requestedAmount: parseInt(loanAmount),
+        },
+      };
+
+      // Add employment details based on type
+      if (employmentType === 'Salaried') {
+        loanDetails.employment = {
+          employmentType: 'SALARIED',
+          employerName: employerName.trim(),
+          monthlyIncome: parseInt(monthlyIncome),
+        };
+      } else if (employmentType === 'Self-Employed Professional') {
+        loanDetails.employment = {
+          employmentType: 'SELF_EMPLOYED_PROFESSIONAL',
+          profession: profession.trim(),
+          annualIncome: parseInt(annualIncome),
+        };
+      }
+
+      // Step 4: Save loan details
+      const detailsResponse = await loanService.saveLoanDetails(applicationId, loanDetails);
+
+      if (!detailsResponse.success) {
+        throw new Error('Failed to save loan details');
+      }
+
+      // Step 5: Submit application
+      const submitResponse = await loanService.submitLoanApplication(applicationId);
+
+      if (!submitResponse.success) {
+        throw new Error('Failed to submit loan application');
+      }
+
+      // Step 6: Save to AsyncStorage for status tracking
+      try {
+        const existingApps = await AsyncStorage.getItem('loanApplications');
+        const applications = existingApps ? JSON.parse(existingApps) : [];
+
+        const newApplication = {
+          applicationId: applicationId,
+          loanType: 'Home Loan',
+          lenderName: lenderData?.name || 'Home Loan',
+          loanAmount: parseInt(loanAmount),
+          status: 'In Review',
+          submittedAt: new Date().toISOString(),
+        };
+
+        applications.unshift(newApplication);
+        await AsyncStorage.setItem('loanApplications', JSON.stringify(applications));
+      } catch (storageError) {
+        console.error('Failed to save to AsyncStorage:', storageError);
+      }
+
+      // Step 7: Navigate to success screen with real data
+      navigation.navigate('HomeLoanApplicationSuccess', {
+        applicationId: applicationId,
+        applicationData: submitResponse.data,
+        lenderName: lenderData?.name || 'Home Loan',
+        loanAmount: loanAmount,
+      });
+
+    } catch (error) {
+      console.error('Error submitting home loan application:', error);
+      Alert.alert(
+        'Submission Failed',
+        error.message || 'Failed to submit loan application. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -122,17 +310,17 @@ const HomeLoanApplicationScreen = ({navigation, route}) => {
       >
         {/* Title Section */}
         <View style={styles.titleSection}>
-          <Text style={styles.sectionTitle}>Basic Details</Text>
+          <Text style={styles.sectionTitle}>Home Loan Application</Text>
           <Text style={styles.sectionDesc}>
-            We need a few details to fetch the best home loan offers for you.
+            Please provide your details to fetch the best home loan offers.
           </Text>
         </View>
 
         {/* Form Fields */}
         <View style={styles.formGroup}>
-          {/* Full Name */}
+          {/* ========== PERSONAL DETAILS ========== */}
           <View style={styles.field}>
-            <Text style={styles.label}>Full Name (as per PAN)</Text>
+            <Text style={styles.label}>Full Name (as per PAN) *</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter your full name"
@@ -142,43 +330,95 @@ const HomeLoanApplicationScreen = ({navigation, route}) => {
             />
           </View>
 
-          {/* Date of Birth */}
           <View style={styles.field}>
-            <Text style={styles.label}>Date of Birth</Text>
-            <TouchableOpacity style={styles.inputWithIcon}>
-              <TextInput
-                style={styles.inputText}
-                placeholder="DD / MM / YYYY"
-                placeholderTextColor="#71717a"
-                value={dateOfBirth}
-                onChangeText={setDateOfBirth}
-              />
+            <Text style={styles.label}>Email *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              placeholderTextColor="#71717a"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>PAN Number *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., ABCDE1234F"
+              placeholderTextColor="#71717a"
+              value={pan}
+              onChangeText={setPan}
+              autoCapitalize="characters"
+              maxLength={10}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Date of Birth *</Text>
+            <TouchableOpacity
+              style={styles.inputWithIcon}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={[styles.inputText, !dateOfBirth && styles.placeholder]}>
+                {dateOfBirth || 'DD / MM / YYYY'}
+              </Text>
               <Calendar size={18} color="#71717a" />
             </TouchableOpacity>
           </View>
 
-          {/* Property City */}
+          {/* ========== ADDRESS DETAILS ========== */}
           <View style={styles.field}>
-            <Text style={styles.label}>Property Location (City)</Text>
+            <Text style={styles.label}>Address *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your address"
+              placeholderTextColor="#71717a"
+              value={addressLine}
+              onChangeText={setAddressLine}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>City *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter city"
+              placeholderTextColor="#71717a"
+              value={city}
+              onChangeText={setCity}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Pincode *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter pincode"
+              placeholderTextColor="#71717a"
+              value={pincode}
+              onChangeText={setPincode}
+              keyboardType="numeric"
+              maxLength={6}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Residence Type *</Text>
             <TouchableOpacity
               style={styles.selectInput}
-              onPress={() => setShowCityModal(true)}
+              onPress={() => setShowResidenceModal(true)}
             >
-              <Text
-                style={[
-                  styles.selectText,
-                  !propertyCity && styles.placeholder,
-                ]}
-              >
-                {propertyCity || 'Select city'}
-              </Text>
+              <Text style={styles.selectText}>{residenceType}</Text>
               <ChevronDown size={16} color="#71717a" />
             </TouchableOpacity>
           </View>
 
-          {/* Employment Type */}
+          {/* ========== EMPLOYMENT DETAILS ========== */}
           <View style={styles.field}>
-            <Text style={styles.label}>Employment Type</Text>
+            <Text style={styles.label}>Employment Type *</Text>
             <TouchableOpacity
               style={styles.selectInput}
               onPress={() => setShowEmploymentModal(true)}
@@ -195,22 +435,64 @@ const HomeLoanApplicationScreen = ({navigation, route}) => {
             </TouchableOpacity>
           </View>
 
-          {/* Property Pincode */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Property Pincode</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter property pincode"
-              placeholderTextColor="#71717a"
-              value={propertyPincode}
-              onChangeText={setPropertyPincode}
-              keyboardType="numeric"
-            />
-          </View>
+          {/* Conditional fields based on employment type */}
+          {employmentType === 'Salaried' && (
+            <>
+              <View style={styles.field}>
+                <Text style={styles.label}>Employer Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter employer name"
+                  placeholderTextColor="#71717a"
+                  value={employerName}
+                  onChangeText={setEmployerName}
+                />
+              </View>
 
-          {/* Loan Amount */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Monthly Income *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter monthly income"
+                  placeholderTextColor="#71717a"
+                  value={monthlyIncome}
+                  onChangeText={setMonthlyIncome}
+                  keyboardType="numeric"
+                />
+              </View>
+            </>
+          )}
+
+          {employmentType === 'Self-Employed Professional' && (
+            <>
+              <View style={styles.field}>
+                <Text style={styles.label}>Profession *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., Doctor, Lawyer, CA"
+                  placeholderTextColor="#71717a"
+                  value={profession}
+                  onChangeText={setProfession}
+                />
+              </View>
+
+              <View style={styles.field}>
+                <Text style={styles.label}>Annual Income *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter annual income"
+                  placeholderTextColor="#71717a"
+                  value={annualIncome}
+                  onChangeText={setAnnualIncome}
+                  keyboardType="numeric"
+                />
+              </View>
+            </>
+          )}
+
+          {/* ========== LOAN DETAILS ========== */}
           <View style={styles.field}>
-            <Text style={styles.label}>Required Loan Amount</Text>
+            <Text style={styles.label}>Required Loan Amount *</Text>
             <View style={styles.loanAmountContainer}>
               <TextInput
                 style={styles.loanAmountInput}
@@ -224,9 +506,6 @@ const HomeLoanApplicationScreen = ({navigation, route}) => {
                 {formatCurrency(loanAmount)}
               </Text>
             </View>
-            <Text style={styles.loanAmountNote}>
-              Range: ₹1 Lakh - ₹5 Crore
-            </Text>
           </View>
         </View>
 
@@ -244,49 +523,89 @@ const HomeLoanApplicationScreen = ({navigation, route}) => {
       {/* Action Area */}
       <View style={styles.actionArea}>
         <TouchableOpacity
-          style={styles.proceedBtn}
+          style={[styles.proceedBtn, loading && styles.proceedBtnDisabled]}
           onPress={handleProceed}
+          disabled={loading}
         >
-          <Text style={styles.proceedBtnText}>Proceed</Text>
-          <ArrowRight size={18} color="#ffffff" />
+          {loading ? (
+            <ActivityIndicator color="#ffffff" size="small" />
+          ) : (
+            <>
+              <Text style={styles.proceedBtnText}>Proceed</Text>
+              <ArrowRight size={18} color="#ffffff" />
+            </>
+          )}
         </TouchableOpacity>
         <Text style={styles.termsText}>
           By proceeding, you agree to FYNP Terms & Conditions
         </Text>
       </View>
 
-      {/* City Modal */}
+      {/* Date Picker Modal */}
       <Modal
-        visible={showCityModal}
+        visible={showDatePicker}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowCityModal(false)}
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowDatePicker(false)}
+          />
+          <View style={styles.datePickerContainer}>
+            <View style={styles.datePickerHeader}>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.cancelBtn}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.datePickerTitle}>Select Date of Birth</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.confirmBtn}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Residence Type Modal */}
+      <Modal
+        visible={showResidenceModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowResidenceModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select City</Text>
-              <TouchableOpacity onPress={() => setShowCityModal(false)}>
+              <Text style={styles.modalTitle}>Select Residence Type</Text>
+              <TouchableOpacity onPress={() => setShowResidenceModal(false)}>
                 <Text style={styles.closeBtn}>✕</Text>
               </TouchableOpacity>
             </View>
-            {cityOptions.map((option) => (
+            {['RENTED', 'OWNED', 'PARENTAL'].map((type) => (
               <TouchableOpacity
-                key={option.value}
+                key={type}
                 style={styles.modalOption}
                 onPress={() => {
-                  setPropertyCity(option.value);
-                  setShowCityModal(false);
+                  setResidenceType(type);
+                  setShowResidenceModal(false);
                 }}
               >
                 <Text
                   style={[
                     styles.modalOptionText,
-                    propertyCity === option.value &&
-                      styles.modalOptionTextActive,
+                    residenceType === type && styles.modalOptionTextActive,
                   ]}
                 >
-                  {option.label}
+                  {type}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -547,6 +866,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 
+  proceedBtnDisabled: {
+    opacity: 0.6,
+  },
+
   termsText: {
     fontSize: 11,
     color: '#71717a',
@@ -606,6 +929,50 @@ const styles = StyleSheet.create({
   modalOptionTextActive: {
     color: '#7c3aed',
     fontWeight: '600',
+  },
+
+  // Date Picker Modal Styles
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+
+  datePickerContainer: {
+    backgroundColor: '#141417',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#27272a',
+  },
+
+  datePickerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+
+  cancelBtn: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#71717a',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+
+  confirmBtn: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#7c3aed',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
 });
 

@@ -134,7 +134,7 @@ const DashboardScreen = ({ navigation }) => {
     if (screenName === 'Home') {
       navigation.navigate('Home');
     } else if (screenName === 'Status') {
-      navigation.navigate('Portfolio');
+      navigation.navigate('LoanApplicationStatus');
     } else if (screenName === 'Account') {
       navigation.navigate('Account');
     } else if (screenName === 'Offers') {

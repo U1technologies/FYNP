@@ -125,7 +125,7 @@ const LoanEligibilityScreen = () => {
                     <View style={styles.inputGroup}>
                         <View style={styles.inputHeader}>
                             <Text style={[styles.label, { color: currentMuted }]}>Net Monthly Income</Text>
-                            <Text style={[styles.valueTag, { color: currentText, backgroundColor: isDarkMode ? theme.backgroundSecondary : '#f4f4f5' }]}>
+                            <Text style={[styles.valueTag, { color: accentColor, backgroundColor: isDarkMode ? 'rgba(34, 211, 238, 0.1)' : 'rgba(156, 108, 255, 0.1)' }]}>
                                 {formatCurrency(monthlyIncome)}
                             </Text>
                         </View>
@@ -150,7 +150,7 @@ const LoanEligibilityScreen = () => {
                     <View style={styles.inputGroup}>
                         <View style={styles.inputHeader}>
                             <Text style={[styles.label, { color: currentMuted }]}>Current Monthly EMIs</Text>
-                            <Text style={[styles.valueTag, { color: currentText, backgroundColor: isDarkMode ? theme.backgroundSecondary : '#f4f4f5' }]}>
+                            <Text style={[styles.valueTag, { color: accentColor, backgroundColor: isDarkMode ? 'rgba(34, 211, 238, 0.1)' : 'rgba(156, 108, 255, 0.1)' }]}>
                                 {formatCurrency(existingEMI)}
                             </Text>
                         </View>
@@ -175,7 +175,7 @@ const LoanEligibilityScreen = () => {
                     <View style={styles.inputGroup}>
                         <View style={styles.inputHeader}>
                             <Text style={[styles.label, { color: currentMuted }]}>Interest Rate (p.a)</Text>
-                            <Text style={[styles.valueTag, { color: currentText, backgroundColor: isDarkMode ? theme.backgroundSecondary : '#f4f4f5' }]}>
+                            <Text style={[styles.valueTag, { color: accentColor, backgroundColor: isDarkMode ? 'rgba(34, 211, 238, 0.1)' : 'rgba(156, 108, 255, 0.1)' }]}>
                                 {interestRate.toFixed(1)}%
                             </Text>
                         </View>
@@ -200,7 +200,7 @@ const LoanEligibilityScreen = () => {
                     <View style={styles.inputGroup}>
                         <View style={styles.inputHeader}>
                             <Text style={[styles.label, { color: currentMuted }]}>Desired Tenure</Text>
-                            <Text style={[styles.valueTag, { color: currentText, backgroundColor: isDarkMode ? theme.backgroundSecondary : '#f4f4f5' }]}>
+                            <Text style={[styles.valueTag, { color: accentColor, backgroundColor: isDarkMode ? 'rgba(34, 211, 238, 0.1)' : 'rgba(156, 108, 255, 0.1)' }]}>
                                 {tenure} Years
                             </Text>
                         </View>
@@ -325,13 +325,12 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     valueTag: {
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: 16,
+        fontWeight: '700',
         paddingHorizontal: 12,
-        paddingVertical: 6,
+        paddingVertical: 4,
         borderRadius: 8,
-        minWidth: 80,
-        textAlign: 'center',
+        overflow: 'hidden',
     },
     slider: {
         width: '100%',
@@ -340,6 +339,7 @@ const styles = StyleSheet.create({
     rangeLabels: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        marginTop: -8,
     },
     rangeText: {
         fontSize: 12,

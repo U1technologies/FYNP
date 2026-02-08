@@ -30,7 +30,6 @@ import LoanDetailsScreen from '../screens/Loans/LoanDetailsScreen';
 import EMICalculatorScreen from '../screens/Tools/EMICalculatorScreen';
 import LoanEligibilityScreen from '../screens/Tools/LoanEligibilityScreen';
 import TaxSaverScreen from '../screens/Tools/TaxSaverScreen';
-import PortfolioScreen from '../screens/Portfolio/PortfolioScreen';
 
 const Stack = createStackNavigator();
 
@@ -62,7 +61,6 @@ const HomeStackNavigator = () => {
       <Stack.Screen name="EMICalculator" component={EMICalculatorScreen} />
       <Stack.Screen name="LoanEligibility" component={LoanEligibilityScreen} />
       <Stack.Screen name="TaxSaver" component={TaxSaverScreen} />
-      <Stack.Screen name="Portfolio" component={PortfolioScreen} />
     </Stack.Navigator>
   );
 };

@@ -7,7 +7,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, PieChart, Tag, User } from 'lucide-react-native';
 import HomeStackNavigator from './HomeStackNavigator';
-import PortfolioScreen from '../screens/Portfolio/PortfolioScreen';
+import LoanApplicationStatusScreen from '../screens/Loans/LoanApplicationStatusScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 import OffersScreen from '../screens/Offers/OffersScreen';
 import { colors } from '../theme';
@@ -30,9 +30,9 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="Portfolio"
-        component={PortfolioScreen}
+        component={LoanApplicationStatusScreen}
         options={{
-          tabBarLabel: 'Portfolio',
+          tabBarLabel: 'Status',
         }}
       />
       <Tab.Screen
