@@ -14,6 +14,8 @@ import {
   TextInput,
   Modal,
   Alert,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
@@ -23,69 +25,235 @@ import {
   ChevronDown,
   ShieldCheck,
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as loanService from '../../services/loanService';
 
 const EducationLoanApplicationScreen = ({navigation, route}) => {
   const {lenderData} = route.params || {};
 
+  // Personal details (guardian/parent)
   const [fullName, setFullName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [pan, setPan] = React.useState('');
+  const [mobile, setMobile] = React.useState('');
   const [dateOfBirth, setDateOfBirth] = React.useState('');
-  const [targetCountry, setTargetCountry] = React.useState(null);
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+
+  // Address details
+  const [addressLine, setAddressLine] = React.useState('');
+  const [city, setCity] = React.useState('');
+  const [pincode, setPincode] = React.useState('');
+  const [residenceType, setResidenceType] = React.useState('RENTED');
+  const [showResidenceModal, setShowResidenceModal] = React.useState(false);
+
+  // Education details
+  const [studentFullName, setStudentFullName] = React.useState('');
   const [collegeName, setCollegeName] = React.useState('');
-  const [courseProgram, setCourseProgram] = React.useState('');
+  const [courseName, setCourseName] = React.useState('');
+  const [totalFees, setTotalFees] = React.useState('');
+
+  // Loan details
   const [loanAmount, setLoanAmount] = React.useState('4500000');
-  const [showCountryModal, setShowCountryModal] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
-  const countryOptions = [
-    {label: 'USA', value: 'USA'},
-    {label: 'Canada', value: 'Canada'},
-    {label: 'UK', value: 'UK'},
-    {label: 'Australia', value: 'Australia'},
-    {label: 'Germany', value: 'Germany'},
-    {label: 'Singapore', value: 'Singapore'},
-    {label: 'India', value: 'India'},
-  ];
+  // Load mobile from AsyncStorage
+  React.useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setMobile(user.mobile || '');
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+    loadUserData();
+  }, []);
 
-  const handleProceed = () => {
-    // Validation
+  const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day} / ${month} / ${year}`;
+  };
+
+  const handleDateChange = (event, date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (date) {
+      setSelectedDate(date);
+      setDateOfBirth(formatDate(date));
+    }
+  };
+
+  const handleProceed = async () => {
+    // Validation - Personal Details
     if (!fullName.trim()) {
       Alert.alert('Required Field', 'Please enter your full name');
       return;
     }
-    if (!dateOfBirth.trim()) {
+    if (!email.trim()) {
+      Alert.alert('Required Field', 'Please enter your email');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      return;
+    }
+    if (!pan.trim()) {
+      Alert.alert('Required Field', 'Please enter your PAN number');
+      return;
+    }
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panRegex.test(pan.trim().toUpperCase())) {
+      Alert.alert('Invalid PAN', 'Please enter a valid PAN number (e.g., ABCDE1234F)');
+      return;
+    }
+    if (!dateOfBirth) {
       Alert.alert('Required Field', 'Please select your date of birth');
       return;
     }
-    if (!targetCountry) {
-      Alert.alert('Required Field', 'Please select target country');
+
+    // Validation - Address Details
+    if (!addressLine.trim()) {
+      Alert.alert('Required Field', 'Please enter your address');
+      return;
+    }
+    if (!city.trim()) {
+      Alert.alert('Required Field', 'Please enter your city');
+      return;
+    }
+    if (!pincode.trim()) {
+      Alert.alert('Required Field', 'Please enter your pincode');
+      return;
+    }
+
+    // Validation - Education Details
+    if (!studentFullName.trim()) {
+      Alert.alert('Required Field', 'Please enter student full name');
       return;
     }
     if (!collegeName.trim()) {
       Alert.alert('Required Field', 'Please enter college/university name');
       return;
     }
-    if (!courseProgram.trim()) {
+    if (!courseName.trim()) {
       Alert.alert('Required Field', 'Please enter course/program name');
       return;
     }
 
-    // Proceed to next screen
-    const applicationData = {
-      fullName: fullName.trim(),
-      dateOfBirth,
-      targetCountry,
-      collegeName: collegeName.trim(),
-      courseProgram: courseProgram.trim(),
-      loanAmount,
-      lenderName: lenderData?.name || 'Education Loan',
-    };
+    setLoading(true);
 
-    navigation.navigate('EducationLoanApplicationSuccess', {
-      applicationData,
-    });
+    try {
+      // Step 1: Create draft application
+      const draftResponse = await loanService.createLoanApplication('EDUCATION_LOAN');
+
+      if (!draftResponse.success || !draftResponse.data) {
+        throw new Error('Failed to create loan application');
+      }
+
+      const applicationId = draftResponse.data.applicationId;
+
+      // Step 2: Prepare loan details (nested structure matching website)
+      const loanDetails = {
+        personal: {
+          fullName: fullName.trim(),
+          email: email.trim(),
+          pan: pan.trim().toUpperCase(),
+          mobile: mobile,
+          dob: dateOfBirth,
+        },
+        address: {
+          current: {
+            line1: addressLine.trim(),
+            city: city.trim(),
+            pincode: pincode.trim(),
+            residenceType: residenceType,
+          },
+          permanent: {
+            line1: addressLine.trim(),
+            city: city.trim(),
+            pincode: pincode.trim(),
+            residenceType: residenceType,
+          },
+        },
+        education: {
+          studentFullName: studentFullName.trim(),
+          collegeName: collegeName.trim(),
+          courseName: courseName.trim(),
+          ...(totalFees && { totalFees: parseInt(totalFees) }),
+        },
+        loan: {
+          requestedAmount: parseInt(loanAmount),
+        },
+      };
+
+      // Step 3: Save loan details
+      const detailsResponse = await loanService.saveLoanDetails(applicationId, loanDetails);
+
+      if (!detailsResponse.success) {
+        throw new Error('Failed to save loan details');
+      }
+
+      // Step 4: Submit application
+      const submitResponse = await loanService.submitLoanApplication(applicationId);
+
+      if (!submitResponse.success) {
+        throw new Error('Failed to submit loan application');
+      }
+
+      // Step 5: Save to AsyncStorage for status tracking
+      try {
+        const existingApps = await AsyncStorage.getItem('loanApplications');
+        const applications = existingApps ? JSON.parse(existingApps) : [];
+
+        const newApplication = {
+          applicationId: applicationId,
+          loanType: 'Education Loan',
+          lenderName: lenderData?.name || 'Education Loan',
+          loanAmount: parseInt(loanAmount),
+          status: 'In Review',
+          submittedAt: new Date().toISOString(),
+        };
+
+        applications.unshift(newApplication);
+        await AsyncStorage.setItem('loanApplications', JSON.stringify(applications));
+      } catch (storageError) {
+        console.error('Failed to save to AsyncStorage:', storageError);
+      }
+
+      // Step 6: Navigate to success screen with real data
+      navigation.navigate('EducationLoanApplicationSuccess', {
+        applicationId: applicationId,
+        applicationData: submitResponse.data,
+        lenderName: lenderData?.name || 'Education Loan',
+        loanAmount: loanAmount,
+      });
+
+    } catch (error) {
+      console.error('Error submitting education loan application:', error);
+      Alert.alert(
+        'Submission Failed',
+        error.message || 'Failed to submit loan application. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatCurrency = (amount) => {
-    return '₹ ' + (parseInt(amount) / 100000).toFixed(2) + 'L';
+    const num = parseInt(amount);
+    if (num >= 10000000) {
+      return '₹' + (num / 10000000).toFixed(2) + ' Cr';
+    }
+    return '₹' + (num / 100000).toFixed(2) + ' L';
   };
 
   return (
@@ -122,55 +290,118 @@ const EducationLoanApplicationScreen = ({navigation, route}) => {
 
         {/* Form Fields */}
         <View style={styles.formGroup}>
-          {/* Full Name */}
+          {/* ========== PERSONAL DETAILS (Guardian/Parent) ========== */}
           <View style={styles.field}>
-            <Text style={styles.label}>Full Name (as per PAN)</Text>
+            <Text style={styles.label}>Full Name (Guardian/Parent) *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter your full name"
+              placeholder="Enter guardian/parent full name"
               placeholderTextColor="#71717a"
               value={fullName}
               onChangeText={setFullName}
             />
           </View>
 
-          {/* Date of Birth */}
           <View style={styles.field}>
-            <Text style={styles.label}>Date of Birth</Text>
-            <TouchableOpacity style={styles.inputWithIcon}>
-              <TextInput
-                style={styles.inputText}
-                placeholder="DD / MM / YYYY"
-                placeholderTextColor="#71717a"
-                value={dateOfBirth}
-                onChangeText={setDateOfBirth}
-              />
+            <Text style={styles.label}>Email *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              placeholderTextColor="#71717a"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>PAN Number *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., ABCDE1234F"
+              placeholderTextColor="#71717a"
+              value={pan}
+              onChangeText={setPan}
+              autoCapitalize="characters"
+              maxLength={10}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Date of Birth *</Text>
+            <TouchableOpacity
+              style={styles.inputWithIcon}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={[styles.inputText, !dateOfBirth && styles.placeholder]}>
+                {dateOfBirth || 'DD / MM / YYYY'}
+              </Text>
               <Calendar size={18} color="#71717a" />
             </TouchableOpacity>
           </View>
 
-          {/* Target Country */}
+          {/* ========== ADDRESS DETAILS ========== */}
           <View style={styles.field}>
-            <Text style={styles.label}>Target Country</Text>
+            <Text style={styles.label}>Address *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your address"
+              placeholderTextColor="#71717a"
+              value={addressLine}
+              onChangeText={setAddressLine}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>City *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter city"
+              placeholderTextColor="#71717a"
+              value={city}
+              onChangeText={setCity}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Pincode *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter pincode"
+              placeholderTextColor="#71717a"
+              value={pincode}
+              onChangeText={setPincode}
+              keyboardType="numeric"
+              maxLength={6}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Residence Type *</Text>
             <TouchableOpacity
               style={styles.selectInput}
-              onPress={() => setShowCountryModal(true)}
+              onPress={() => setShowResidenceModal(true)}
             >
-              <Text
-                style={[
-                  styles.selectText,
-                  !targetCountry && styles.placeholder,
-                ]}
-              >
-                {targetCountry || 'Select country'}
-              </Text>
+              <Text style={styles.selectText}>{residenceType}</Text>
               <ChevronDown size={16} color="#71717a" />
             </TouchableOpacity>
           </View>
 
-          {/* College Name */}
+          {/* ========== EDUCATION DETAILS (Student) ========== */}
           <View style={styles.field}>
-            <Text style={styles.label}>College / University Name</Text>
+            <Text style={styles.label}>Student Full Name *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter student full name"
+              placeholderTextColor="#71717a"
+              value={studentFullName}
+              onChangeText={setStudentFullName}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>College / University Name *</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter college or university name"
@@ -180,29 +411,45 @@ const EducationLoanApplicationScreen = ({navigation, route}) => {
             />
           </View>
 
-          {/* Course Program */}
           <View style={styles.field}>
-            <Text style={styles.label}>Course / Program</Text>
+            <Text style={styles.label}>Course Name *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter course or program name"
+              placeholder="Enter course name"
               placeholderTextColor="#71717a"
-              value={courseProgram}
-              onChangeText={setCourseProgram}
+              value={courseName}
+              onChangeText={setCourseName}
             />
           </View>
 
-          {/* Loan Amount */}
           <View style={styles.field}>
-            <Text style={styles.label}>Loan Amount Required</Text>
+            <Text style={styles.label}>Total Fees (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter total fees"
+              placeholderTextColor="#71717a"
+              value={totalFees}
+              onChangeText={setTotalFees}
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* ========== LOAN DETAILS ========== */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Required Loan Amount *</Text>
             <View style={styles.loanAmountContainer}>
-              <Text style={styles.loanAmountText}>
+              <TextInput
+                style={styles.loanAmountInput}
+                value={loanAmount}
+                onChangeText={setLoanAmount}
+                placeholder="Enter loan amount"
+                placeholderTextColor="#71717a"
+                keyboardType="numeric"
+              />
+              <Text style={styles.loanAmountDisplay}>
                 {formatCurrency(loanAmount)}
               </Text>
             </View>
-            <Text style={styles.loanAmountNote}>
-              Auto-selected based on your preference
-            </Text>
           </View>
         </View>
 
@@ -220,49 +467,89 @@ const EducationLoanApplicationScreen = ({navigation, route}) => {
       {/* Action Area */}
       <View style={styles.actionArea}>
         <TouchableOpacity
-          style={styles.proceedBtn}
+          style={[styles.proceedBtn, loading && styles.proceedBtnDisabled]}
           onPress={handleProceed}
+          disabled={loading}
         >
-          <Text style={styles.proceedBtnText}>Proceed</Text>
-          <ArrowRight size={18} color="#ffffff" />
+          {loading ? (
+            <ActivityIndicator color="#ffffff" size="small" />
+          ) : (
+            <>
+              <Text style={styles.proceedBtnText}>Proceed</Text>
+              <ArrowRight size={18} color="#ffffff" />
+            </>
+          )}
         </TouchableOpacity>
         <Text style={styles.termsText}>
           By proceeding, you agree to FYNP Terms & Conditions
         </Text>
       </View>
 
-      {/* Country Modal */}
+      {/* Date Picker Modal */}
       <Modal
-        visible={showCountryModal}
+        visible={showDatePicker}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowCountryModal(false)}
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowDatePicker(false)}
+          />
+          <View style={styles.datePickerContainer}>
+            <View style={styles.datePickerHeader}>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.cancelBtn}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.datePickerTitle}>Select Date of Birth</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.confirmBtn}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Residence Type Modal */}
+      <Modal
+        visible={showResidenceModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowResidenceModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Country</Text>
-              <TouchableOpacity onPress={() => setShowCountryModal(false)}>
+              <Text style={styles.modalTitle}>Select Residence Type</Text>
+              <TouchableOpacity onPress={() => setShowResidenceModal(false)}>
                 <Text style={styles.closeBtn}>✕</Text>
               </TouchableOpacity>
             </View>
-            {countryOptions.map((option) => (
+            {['RENTED', 'OWNED', 'PARENTAL'].map((type) => (
               <TouchableOpacity
-                key={option.value}
+                key={type}
                 style={styles.modalOption}
                 onPress={() => {
-                  setTargetCountry(option.value);
-                  setShowCountryModal(false);
+                  setResidenceType(type);
+                  setShowResidenceModal(false);
                 }}
               >
                 <Text
                   style={[
                     styles.modalOptionText,
-                    targetCountry === option.value &&
-                      styles.modalOptionTextActive,
+                    residenceType === type && styles.modalOptionTextActive,
                   ]}
                 >
-                  {option.label}
+                  {type}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -438,6 +725,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  loanAmountInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '600',
+    padding: 0,
+  },
+
+  loanAmountDisplay: {
+    fontSize: 14,
+    color: '#8b5cf6',
+    fontWeight: '600',
   },
 
   loanAmountText: {
@@ -504,6 +808,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 
+  proceedBtnDisabled: {
+    opacity: 0.6,
+  },
+
   termsText: {
     fontSize: 11,
     color: '#71717a',
@@ -563,6 +871,50 @@ const styles = StyleSheet.create({
   modalOptionTextActive: {
     color: '#7c3aed',
     fontWeight: '600',
+  },
+
+  // Date Picker Modal Styles
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+
+  datePickerContainer: {
+    backgroundColor: '#141417',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#27272a',
+  },
+
+  datePickerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+
+  cancelBtn: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#71717a',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+
+  confirmBtn: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#7c3aed',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
 });
 

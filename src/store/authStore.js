@@ -3,13 +3,13 @@
  * Global authentication state management using React Context
  */
 
-import React, {createContext, useContext, useState, useEffect} from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {AUTH_STORAGE_KEYS} from '../config/constants';
+import { AUTH_STORAGE_KEYS } from '../config/constants';
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({children}) => {
+export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -36,13 +36,17 @@ export const AuthProvider = ({children}) => {
     }
   };
 
-  const login = async (authToken, userData) => {
+  const login = async (authToken, userData, refreshTokenValue = null) => {
     try {
       await AsyncStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, authToken);
       await AsyncStorage.setItem(
         AUTH_STORAGE_KEYS.USER,
         JSON.stringify(userData),
       );
+
+      if (refreshTokenValue) {
+        await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshTokenValue);
+      }
 
       setToken(authToken);
       setUser(userData);
@@ -69,7 +73,7 @@ export const AuthProvider = ({children}) => {
 
   const updateUser = async (updates) => {
     try {
-      const updatedUser = {...user, ...updates};
+      const updatedUser = { ...user, ...updates };
       await AsyncStorage.setItem(
         AUTH_STORAGE_KEYS.USER,
         JSON.stringify(updatedUser),
@@ -104,4 +108,4 @@ export const useAuthStore = () => {
   return context;
 };
 
-export default {AuthProvider, useAuthStore};
+export default { AuthProvider, useAuthStore };

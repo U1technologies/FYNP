@@ -3,11 +3,11 @@
  * Centralized access to environment variables
  */
 
-import {API_URL, API_TIMEOUT, ENV} from '@env';
+import { API_URL, API_TIMEOUT, ENV } from '@env';
 
 const config = {
   // API Configuration
-  apiUrl: API_URL || 'http://localhost:3000/api',
+  apiUrl: API_URL || 'http://localhost:5000/api/v1',
   apiTimeout: API_TIMEOUT || 30000,
 
   // Environment

@@ -1,9 +1,10 @@
 /**
  * FYNP Loan Application Status Screen
  * Shows all submitted loan applications with their status
+ * Integrated with Portfolio screen design
  */
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,188 +12,333 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  Briefcase,
+  GraduationCap,
+  Banknote,
+  Home,
   ArrowLeft,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  ChevronRight,
 } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useThemeStore } from '../../store/themeStore';
+import colors from '../../theme/colors';
+import loanService from '../../services/loanService';
 
-const LoanApplicationStatusScreen = ({navigation}) => {
-  // Sample application data
-  const [applications] = React.useState([
-    {
-      id: 'BL-2024-1234',
-      lenderName: 'HDFC Business Loan',
-      loanAmount: '5.00L',
-      status: 'Under Review',
-      statusColor: '#3b82f6',
-      statusBg: 'rgba(59, 130, 246, 0.15)',
-      icon: 'Clock',
-      appliedDate: '2024-01-15',
-      businessName: 'Tech Solutions Pvt Ltd',
-    },
-    {
-      id: 'BL-2024-5678',
-      lenderName: 'Avanse MSME Loan',
-      loanAmount: '3.50L',
-      status: 'Approved',
-      statusColor: '#22c55e',
-      statusBg: 'rgba(34, 197, 94, 0.15)',
-      icon: 'CheckCircle',
-      appliedDate: '2024-01-10',
-      businessName: 'Digital Marketing Agency',
-    },
-    {
-      id: 'BL-2024-9012',
-      lenderName: 'SBI SME Loan',
-      loanAmount: '7.50L',
-      status: 'Pending Documents',
-      statusColor: '#f59e0b',
-      statusBg: 'rgba(245, 158, 11, 0.15)',
-      icon: 'AlertCircle',
-      appliedDate: '2024-01-05',
-      businessName: 'Manufacturing Solutions Inc',
-    },
-  ]);
+const LoanApplicationStatusScreen = ({ navigation }) => {
+  const [activeTab, setActiveTab] = useState('All');
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { isDarkMode } = useThemeStore();
 
-  const getStatusIcon = (iconType) => {
-    switch (iconType) {
-      case 'Clock':
-        return <Clock size={16} color="#3b82f6" />;
-      case 'CheckCircle':
-        return <CheckCircle size={16} color="#22c55e" />;
-      case 'AlertCircle':
-        return <AlertCircle size={16} color="#f59e0b" />;
-      default:
-        return <Clock size={16} color="#3b82f6" />;
+  // Theme Variables
+  const theme = isDarkMode ? colors : colors.light;
+  const currentBackground = theme.background;
+  const currentCard = theme.card;
+  const currentText = theme.textPrimary;
+  const currentMuted = theme.textMuted || '#8e8a98';
+  const currentBorder = isDarkMode ? theme.border : '#93c5fd';
+  const primaryColor = colors.primary;
+
+  const tabs = ['All', 'Draft', 'Pending', 'Approved', 'Rejected'];
+
+  // Load applications from backend API
+  const loadApplications = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await loanService.getUserLoanApplications();
+
+      if (response.success && response.data) {
+        // Map backend response to frontend format
+        const mappedApps = response.data.applications.map((app) => ({
+          applicationId: app.applicationId,
+          loanType: formatLoanType(app.loanType),
+          lenderName: formatLoanType(app.loanType),
+          loanAmount: app.loan?.requestedAmount || 0,
+          status: app.status,
+          submittedAt: app.submittedAt || app.createdAt,
+        }));
+        setApplications(mappedApps);
+      } else {
+        setApplications([]);
+      }
+    } catch (error) {
+      console.error('Error loading applications:', error);
+      setApplications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Reload applications when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadApplications();
+    }, [loadApplications])
+  );
+
+  // Format loan type from backend (BUSINESS_LOAN → Business Loan)
+  const formatLoanType = (loanType) => {
+    if (!loanType) return 'Loan';
+    return loanType
+      .split('_')
+      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  const getLoanTypeIcon = (loanType, color) => {
+    const type = loanType?.toLowerCase() || '';
+    if (type.includes('business')) {
+      return <Briefcase size={20} color={color} />;
+    } else if (type.includes('education')) {
+      return <GraduationCap size={20} color={color} />;
+    } else if (type.includes('home')) {
+      return <Home size={20} color={color} />;
+    } else {
+      return <Banknote size={20} color={color} />;
     }
   };
 
+  const getStatusConfig = (status) => {
+    const statusLower = status?.toLowerCase() || 'draft';
+
+    if (statusLower === 'approved') {
+      return {
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.15)',
+        border: 'rgba(16, 185, 129, 0.3)',
+      };
+    } else if (statusLower === 'rejected') {
+      return {
+        color: '#ef4444',
+        bg: 'rgba(239, 68, 68, 0.15)',
+        border: 'rgba(239, 68, 68, 0.3)',
+      };
+    } else if (statusLower === 'pending') {
+      return {
+        color: '#f59e0b',
+        bg: 'rgba(245, 158, 11, 0.15)',
+        border: 'rgba(245, 158, 11, 0.3)',
+      };
+    } else if (statusLower === 'draft') {
+      return {
+        color: '#8b5cf6',
+        bg: 'rgba(139, 92, 246, 0.15)',
+        border: 'rgba(139, 92, 246, 0.3)',
+      };
+    } else {
+      // Default fallback
+      return {
+        color: '#3b82f6',
+        bg: 'rgba(59, 130, 246, 0.15)',
+        border: 'rgba(59, 130, 246, 0.3)',
+      };
+    }
+  };
+
+  const getLoanTypeConfig = (loanType) => {
+    const type = loanType?.toLowerCase() || '';
+    if (type.includes('business')) {
+      return {
+        color: primaryColor,
+        bg: isDarkMode ? 'rgba(255, 145, 77, 0.1)' : 'rgba(255, 145, 77, 0.15)',
+      };
+    } else if (type.includes('education')) {
+      return {
+        color: '#06b6d4',
+        bg: 'rgba(6, 182, 212, 0.1)',
+      };
+    } else if (type.includes('home')) {
+      return {
+        color: '#8b5cf6',
+        bg: 'rgba(139, 92, 246, 0.1)',
+      };
+    } else {
+      return {
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.1)',
+      };
+    }
+  };
+
+  const formatAmount = (amount) => {
+    if (!amount) return 'N/A';
+    return `₹${amount.toLocaleString('en-IN')}`;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return new Date().toLocaleDateString('en-IN');
+    return new Date(date).toLocaleDateString('en-IN');
+  };
+
+  const filteredApplications = applications.filter((app) => {
+    if (activeTab === 'All') return true;
+    const status = app.status?.toLowerCase() || 'draft';
+
+    if (activeTab === 'Draft') return status === 'draft';
+    if (activeTab === 'Pending') return status === 'pending';
+    if (activeTab === 'Approved') return status === 'approved';
+    if (activeTab === 'Rejected') return status === 'rejected';
+    return true;
+  });
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#09090b" />
+    <SafeAreaView style={[styles.container, { backgroundColor: currentBackground }]} edges={['top']}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={currentBackground} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: currentBorder }]}>
         <TouchableOpacity
-          style={styles.backBtn}
+          style={[styles.backBtn, {
+            backgroundColor: isDarkMode ? theme.backgroundSecondary : '#f4f4f5',
+            borderColor: currentBorder
+          }]}
           onPress={() => navigation.goBack()}
         >
-          <ArrowLeft size={20} color="#ffffff" />
+          <ArrowLeft size={20} color={currentText} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Application Status</Text>
+        <View style={styles.headerContent}>
+          <Text style={[styles.headerTitle, { color: currentText }]}>Application Status</Text>
+          <Text style={[styles.headerDesc, { color: currentMuted }]}>Track your loan applications</Text>
+        </View>
       </View>
 
+      {/* Tabs */}
       <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabsContent}
       >
-        {/* Info Banner */}
-        <View style={styles.infoBanner}>
-          <Text style={styles.bannerTitle}>Track Your Applications</Text>
-          <Text style={styles.bannerDesc}>
-            Monitor the status of all your submitted loan applications in one
-            place
-          </Text>
+        {tabs.map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[
+              styles.tab,
+              {
+                backgroundColor: activeTab === tab ? primaryColor : (isDarkMode ? theme.backgroundSecondary : '#f4f4f5'),
+                borderColor: activeTab === tab ? primaryColor : currentBorder
+              }
+            ]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                { color: activeTab === tab ? '#ffffff' : currentMuted }
+              ]}
+              numberOfLines={1}
+            >
+              {tab}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Applications List */}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={primaryColor} />
+          <Text style={[styles.loadingText, { color: currentMuted }]}>Loading applications...</Text>
         </View>
+      ) : (
+        <ScrollView
+  contentContainerStyle={[styles.listContent, { flexGrow: 1 }]}
+  showsVerticalScrollIndicator={false}
+>
 
-        {/* Applications List */}
-        <View style={styles.applicationsList}>
-          {applications.length > 0 ? (
-            applications.map((app) => (
-              <TouchableOpacity
-                key={app.id}
-                style={styles.applicationCard}
-              >
-                {/* Card Header */}
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardHeaderLeft}>
-                    <Text style={styles.appId}>{app.id}</Text>
-                    <Text style={styles.businessName}>{app.businessName}</Text>
-                  </View>
-                  <View style={[styles.statusBadge, {backgroundColor: app.statusBg}]}>
-                    <View style={{marginRight: 4}}>
-                      {getStatusIcon(app.icon)}
+          {filteredApplications.length > 0 ? (
+            filteredApplications.map((app, index) => {
+              const statusConfig = getStatusConfig(app.status);
+              const loanTypeConfig = getLoanTypeConfig(app.loanType);
+
+              return (
+                <TouchableOpacity
+                  key={app.applicationId || index}
+                  style={[
+                    styles.card,
+                    { backgroundColor: currentCard, borderColor: currentBorder },
+                  ]}
+                >
+                  {/* Card Header */}
+                  <View style={styles.cardHeader}>
+                    <View style={styles.cardInfo}>
+                      <View
+                        style={[
+                          styles.iconBox,
+                          { backgroundColor: loanTypeConfig.bg },
+                        ]}
+                      >
+                        {getLoanTypeIcon(app.loanType, loanTypeConfig.color)}
+                      </View>
+                      <View style={styles.infoContent}>
+                        <Text style={[styles.loanType, { color: currentText }]}>{app.loanType || 'Loan'}</Text>
+                        <Text style={[styles.appId, { color: currentMuted }]}>#{app.applicationId || 'N/A'}</Text>
+                      </View>
                     </View>
-                    <Text style={[styles.statusText, {color: app.statusColor}]}>
-                      {app.status}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Card Body */}
-                <View style={styles.cardBody}>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Lender</Text>
-                    <Text style={styles.infoValue}>{app.lenderName}</Text>
-                  </View>
-
-                  <View style={styles.divider} />
-
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Loan Amount</Text>
-                    <Text style={styles.infoValue}>₹ {app.loanAmount}</Text>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: statusConfig.bg, borderColor: statusConfig.border },
+                      ]}
+                    >
+                      <Text style={[styles.statusText, { color: statusConfig.color }]}>
+                        {app.status || 'DRAFT'}
+                      </Text>
+                    </View>
                   </View>
 
-                  <View style={styles.divider} />
+                  {/* Divider */}
+                  <View style={[styles.divider, { backgroundColor: currentBorder }]} />
 
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Applied On</Text>
-                    <Text style={styles.infoValue}>{app.appliedDate}</Text>
+                  {/* Info Box */}
+                  <View style={[styles.infoBox, { backgroundColor: currentBackground }]}>
+                    <View>
+                      <Text style={[styles.infoLabel, { color: currentMuted }]}>Loan Amount</Text>
+                      <Text style={[styles.infoValue, { color: currentText }]}>
+                        {formatAmount(app.loanAmount)}
+                      </Text>
+                    </View>
+                    <View style={styles.infoRight}>
+                      <Text style={[styles.infoLabel, { color: currentMuted }]}>Applied On</Text>
+                      <Text style={[styles.infoValue, { color: currentText }]}>
+                        {formatDate(app.submittedAt)}
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                {/* Card Footer */}
-                <View style={styles.cardFooter}>
-                  <Text style={styles.viewDetailsText}>View Details</Text>
-                  <ChevronRight size={16} color="#8b5cf6" />
-                </View>
-              </TouchableOpacity>
-            ))
+                  {/* Lender Info */}
+                  {app.lenderName && (
+                    <View style={styles.lenderInfo}>
+                      <Text style={[styles.lenderLabel, { color: currentMuted }]}>Lender: </Text>
+                      <Text style={[styles.lenderValue, { color: currentText }]}>{app.lenderName}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateTitle}>No Applications Yet</Text>
-              <Text style={styles.emptyStateDesc}>
-                You haven't submitted any loan applications yet. Start by applying for a loan.
+              <Text style={[styles.emptyStateTitle, { color: currentText }]}>No Applications Found</Text>
+              <Text style={[styles.emptyStateDesc, { color: currentMuted }]}>
+                {activeTab === 'All'
+                  ? "You haven't submitted any loan applications yet."
+                  : `No applications with status: ${activeTab}`
+                }
               </Text>
+              {activeTab === 'All' && (
+                <TouchableOpacity
+                  style={[styles.emptyBtn, { backgroundColor: primaryColor }]}
+                  onPress={() => navigation.navigate('LoanMarketplace')}
+                >
+                  <Text style={styles.emptyBtnText}>Explore Loans</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
-        </View>
-
-        {/* Status Legend */}
-        <View style={styles.legendSection}>
-          <Text style={styles.legendTitle}>Status Guide</Text>
-          <View style={styles.legendItems}>
-            <View style={styles.legendItem}>
-              <Clock size={14} color="#3b82f6" />
-              <Text style={styles.legendText}>
-                <Text style={styles.legendLabel}>Under Review</Text> - Being
-                processed
-              </Text>
-            </View>
-            <View style={styles.legendItem}>
-              <CheckCircle size={14} color="#22c55e" />
-              <Text style={styles.legendText}>
-                <Text style={styles.legendLabel}>Approved</Text> - Ready for
-                disbursement
-              </Text>
-            </View>
-            <View style={styles.legendItem}>
-              <AlertCircle size={14} color="#f59e0b" />
-              <Text style={styles.legendText}>
-                <Text style={styles.legendLabel}>Pending</Text> - Action
-                required
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={{height: 20}} />
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
@@ -200,225 +346,221 @@ const LoanApplicationStatusScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090b',
   },
 
   // Header
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 14,
+    borderBottomWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
+    gap: 12,
   },
 
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#18181b',
+    width: 40,
+    height: 40,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#27272a',
+  },
+
+  headerContent: {
+    flex: 1,
   },
 
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontWeight: '700',
+    marginBottom: 2,
   },
 
-  // Scroll Content
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    paddingBottom: 40,
-    gap: 24,
-  },
-
-  // Info Banner
-  infoBanner: {
-    backgroundColor: '#141417',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#27272a',
-  },
-
-  bannerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-
-  bannerDesc: {
+  headerDesc: {
     fontSize: 13,
-    color: '#71717a',
-    lineHeight: 18,
   },
 
-  // Applications List
-  applicationsList: {
+  // Tabs
+  tabsContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 8,
+    flexGrow: 0,
+  },
+
+  tab: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    minWidth: 90,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  tabText: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 16,
+    includeFontPadding: false,
+  },
+
+  // Loading
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 12,
   },
 
-  applicationCard: {
-    backgroundColor: '#141417',
+  loadingText: {
+    fontSize: 14,
+  },
+
+  // List
+ listContent: {
+  paddingHorizontal: 20,
+  paddingTop: 12,
+  paddingBottom: 20,
+  gap: 12,
+},
+
+
+  card: {
     borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#27272a',
-    overflow: 'hidden',
+    gap: 12,
   },
 
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
   },
 
-  cardHeaderLeft: {
+  cardInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     flex: 1,
-    gap: 4,
+  },
+
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  infoContent: {
+    flex: 1,
+  },
+
+  loanType: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 
   appId: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#8b5cf6',
-    letterSpacing: 0.5,
-  },
-
-  businessName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: 12,
+    marginTop: 2,
   },
 
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
   },
 
   statusText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
-  },
-
-  // Card Body
-  cardBody: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-
-  infoLabel: {
-    fontSize: 13,
-    color: '#71717a',
-    fontWeight: '500',
-  },
-
-  infoValue: {
-    fontSize: 13,
-    color: '#ffffff',
-    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   divider: {
     height: 1,
-    backgroundColor: '#27272a',
-    marginVertical: 4,
   },
 
-  // Card Footer
-  cardFooter: {
+  // Info Box
+  infoBox: {
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  infoRight: {
+    alignItems: 'flex-end',
+  },
+
+  infoLabel: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Lender Info
+  lenderInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#27272a',
+    paddingHorizontal: 12,
   },
 
-  viewDetailsText: {
-    fontSize: 13,
+  lenderLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  lenderValue: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#8b5cf6',
   },
 
   // Empty State
   emptyState: {
-    paddingVertical: 40,
+    paddingVertical: 60,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
   },
 
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 8,
   },
 
   emptyStateDesc: {
     fontSize: 13,
-    color: '#71717a',
     textAlign: 'center',
-    maxWidth: 250,
+    maxWidth: 280,
+    lineHeight: 20,
   },
 
-  // Legend Section
-  legendSection: {
-    backgroundColor: '#141417',
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#27272a',
+  emptyBtn: {
+    marginTop: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
 
-  legendTitle: {
+  emptyBtnText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#ffffff',
-  },
-
-  legendItems: {
-    gap: 12,
-  },
-
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-
-  legendLabel: {
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-
-  legendText: {
-    fontSize: 12,
-    color: '#71717a',
-    lineHeight: 16,
-    flex: 1,
   },
 });
 

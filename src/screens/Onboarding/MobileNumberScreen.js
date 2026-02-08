@@ -2,7 +2,7 @@
  * FYNP Mobile Number Entry Screen
  */
 
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,21 +14,41 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {colors, spacing, typography} from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors, spacing, typography } from '../../theme';
+import { authService } from '../../services/authService';
 
-const MobileNumberScreen = ({navigation}) => {
+const MobileNumberScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleGetOTP = () => {
+  const handleGetOTP = async () => {
     if (phoneNumber.length !== 10) {
       Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number');
       return;
     }
 
-    // Navigate to OTP screen with phone number
-    navigation.navigate('OTPVerification', {phoneNumber: `+91 ${phoneNumber}`});
+    try {
+      setLoading(true);
+
+      // Call backend API to send OTP
+      const response = await authService.sendOtp(phoneNumber);
+
+      if (response.success) {
+        // Navigate to OTP screen with phone number
+        navigation.navigate('OTPVerification', { phoneNumber: `+91 ${phoneNumber}`, mobile: phoneNumber });
+        Alert.alert('Success', 'OTP sent successfully to your mobile number');
+      } else {
+        Alert.alert('Error', response.message || 'Failed to send OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      Alert.alert('Error', 'An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatPhoneNumber = text => {
@@ -97,11 +117,15 @@ const MobileNumberScreen = ({navigation}) => {
             <TouchableOpacity
               style={[
                 styles.otpButton,
-                phoneNumber.length !== 10 && styles.otpButtonDisabled,
+                (phoneNumber.length !== 10 || loading) && styles.otpButtonDisabled,
               ]}
               onPress={handleGetOTP}
-              disabled={phoneNumber.length !== 10}>
-              <Text style={styles.otpButtonText}>Get OTP</Text>
+              disabled={phoneNumber.length !== 10 || loading}>
+              {loading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.otpButtonText}>Get OTP</Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>

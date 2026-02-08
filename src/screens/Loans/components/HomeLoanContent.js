@@ -124,7 +124,14 @@ const HomeLoanContent = () => {
                             >
                                 <Text style={styles.viewDetailsBtnText}>View Details</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.applyNowBtn}>
+                            <TouchableOpacity
+                                style={styles.applyNowBtn}
+                                onPress={() =>
+                                    navigation.navigate('HomeLoanApplication', {
+                                        lenderData: lender,
+                                    })
+                                }
+                            >
                                 <Text style={styles.applyNowBtnText}>Apply Now</Text>
                             </TouchableOpacity>
                         </View>

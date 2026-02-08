@@ -14,6 +14,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
@@ -22,75 +23,217 @@ import {
   ShieldCheck,
   ArrowRight,
 } from 'lucide-react-native';
+import * as loanService from '../../services/loanService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import {Calendar} from 'lucide-react-native';
+import {Platform} from 'react-native';
 
 const BusinessLoanApplicationScreen = ({navigation, route}) => {
   const {lenderData} = route.params || {};
 
-  const [businessName, setBusinessName] = React.useState('');
+  // Personal details
   const [applicantName, setApplicantName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [pan, setPan] = React.useState('');
+  const [mobile, setMobile] = React.useState('');
+  const [dateOfBirth, setDateOfBirth] = React.useState('');
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+
+  // Address details
+  const [addressLine, setAddressLine] = React.useState('');
   const [city, setCity] = React.useState('');
-  const [businessVintage, setBusinessVintage] = React.useState(null);
-  const [annualTurnover, setAnnualTurnover] = React.useState(null);
-  const [loanAmount, setLoanAmount] = React.useState('500000');
-  const [showVintageModal, setShowVintageModal] = React.useState(false);
-  const [showTurnoverModal, setShowTurnoverModal] = React.useState(false);
+  const [pincode, setPincode] = React.useState('');
+  const [residenceType, setResidenceType] = React.useState('RENTED');
+  const [showResidenceModal, setShowResidenceModal] = React.useState(false);
+
+  // Business details
+  const [businessName, setBusinessName] = React.useState('');
+  const [businessType, setBusinessType] = React.useState('PROPRIETORSHIP');
+  const [gstNumber, setGstNumber] = React.useState('');
+  const [annualTurnover, setAnnualTurnover] = React.useState('');
+  const [showBusinessTypeModal, setShowBusinessTypeModal] = React.useState(false);
+
   const [editableLoanAmount, setEditableLoanAmount] = React.useState('500000');
+  const [loading, setLoading] = React.useState(false);
 
-  const vintageOptions = [
-    {label: '0-1 Years', value: '0-1'},
-    {label: '1-3 Years', value: '1-3'},
-    {label: '3-5 Years', value: '3-5'},
-    {label: '5-10 Years', value: '5-10'},
-    {label: '10+ Years', value: '10+'},
-  ];
+  // Load mobile number from AsyncStorage
+  React.useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setMobile(user.mobile || '');
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+    loadUserData();
+  }, []);
 
-  const turnoverOptions = [
-    {label: '< ₹5 Lakhs', value: '<5L'},
-    {label: '₹5 - 10 Lakhs', value: '5-10L'},
-    {label: '₹10 - 25 Lakhs', value: '10-25L'},
-    {label: '₹25 - 50 Lakhs', value: '25-50L'},
-    {label: '₹50 - 1 Cr', value: '50L-1Cr'},
-    {label: '> ₹1 Cr', value: '>1Cr'},
-  ];
+  const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day} / ${month} / ${year}`;
+  };
 
-  const handleProceed = () => {
-    // Validation
-    if (!businessName.trim()) {
-      Alert.alert('Required Field', 'Please enter your business name');
+  const handleDateChange = (event, date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (date) {
+      setSelectedDate(date);
+      setDateOfBirth(formatDate(date));
+    }
+  };
+
+  const handleProceed = async () => {
+    // Validation - Required fields
+    if (!applicantName.trim()) {
+      Alert.alert('Required Field', 'Please enter your full name');
       return;
     }
-    if (!applicantName.trim()) {
-      Alert.alert('Required Field', 'Please enter your name');
+    if (!email.trim()) {
+      Alert.alert('Required Field', 'Please enter your email');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email');
+      return;
+    }
+    if (!pan.trim()) {
+      Alert.alert('Required Field', 'Please enter your PAN number');
+      return;
+    }
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panRegex.test(pan.toUpperCase())) {
+      Alert.alert('Invalid PAN', 'Please enter a valid PAN (e.g., ABCDE1234F)');
+      return;
+    }
+    if (!dateOfBirth) {
+      Alert.alert('Required Field', 'Please select your date of birth');
+      return;
+    }
+    if (!addressLine.trim()) {
+      Alert.alert('Required Field', 'Please enter your address');
       return;
     }
     if (!city.trim()) {
       Alert.alert('Required Field', 'Please enter your city');
       return;
     }
-    if (!businessVintage) {
-      Alert.alert('Required Field', 'Please select business vintage');
+    if (!pincode.trim() || pincode.length !== 6) {
+      Alert.alert('Required Field', 'Please enter a valid 6-digit pincode');
       return;
     }
-    if (!annualTurnover) {
-      Alert.alert('Required Field', 'Please select annual turnover');
+    if (!businessName.trim()) {
+      Alert.alert('Required Field', 'Please enter your business name');
       return;
     }
 
-    // Proceed to next screen
-    const applicationData = {
-      businessName: businessName.trim(),
-      applicantName: applicantName.trim(),
-      city: city.trim(),
-      businessVintage,
-      annualTurnover,
-      loanAmount: editableLoanAmount,
-      lenderName: lenderData?.name || 'Business Loan',
-    };
+    setLoading(true);
 
-    // Navigate to success screen first
-    navigation.navigate('BusinessLoanApplicationSuccess', {
-      applicationData,
-    });
+    try {
+      // Step 1: Create draft application
+      const draftResponse = await loanService.createLoanApplication('BUSINESS_LOAN');
+
+      if (!draftResponse.success || !draftResponse.data) {
+        throw new Error('Failed to create loan application');
+      }
+
+      const applicationId = draftResponse.data.applicationId;
+
+      // Step 2: Prepare loan details (nested structure matching website)
+      const loanDetails = {
+        personal: {
+          fullName: applicantName.trim(),
+          email: email.trim(),
+          pan: pan.trim().toUpperCase(),
+          mobile: mobile,
+          dob: dateOfBirth,
+        },
+        address: {
+          current: {
+            line1: addressLine.trim(),
+            city: city.trim(),
+            pincode: pincode.trim(),
+            residenceType: residenceType,
+          },
+          permanent: {
+            line1: addressLine.trim(),
+            city: city.trim(),
+            pincode: pincode.trim(),
+            residenceType: residenceType,
+          },
+        },
+        business: {
+          businessName: businessName.trim(),
+          businessType: businessType,
+          ...(gstNumber.trim() && { gstNumber: gstNumber.trim() }),
+          ...(annualTurnover && { annualTurnover: parseInt(annualTurnover) }),
+        },
+        loan: {
+          requestedAmount: parseInt(editableLoanAmount),
+        },
+      };
+
+      // Step 3: Save loan details
+      const detailsResponse = await loanService.saveLoanDetails(applicationId, loanDetails);
+
+      if (!detailsResponse.success) {
+        throw new Error('Failed to save loan details');
+      }
+
+      // Step 4: Submit application
+      const submitResponse = await loanService.submitLoanApplication(applicationId);
+
+      if (!submitResponse.success) {
+        throw new Error('Failed to submit loan application');
+      }
+
+      // Step 5: Save to AsyncStorage for status tracking
+      try {
+        const existingApps = await AsyncStorage.getItem('loanApplications');
+        const applications = existingApps ? JSON.parse(existingApps) : [];
+
+        const newApplication = {
+          applicationId: applicationId,
+          loanType: 'Business Loan',
+          lenderName: lenderData?.name || 'Business Loan',
+          loanAmount: parseInt(editableLoanAmount),
+          status: 'In Review',
+          submittedAt: new Date().toISOString(),
+        };
+
+        applications.unshift(newApplication);
+        await AsyncStorage.setItem('loanApplications', JSON.stringify(applications));
+      } catch (storageError) {
+        console.error('Failed to save to AsyncStorage:', storageError);
+      }
+
+      // Step 6: Navigate to success screen with real data
+      navigation.navigate('BusinessLoanApplicationSuccess', {
+        applicationId: applicationId,
+        applicationData: submitResponse.data,
+        lenderName: lenderData?.name || 'Business Loan',
+        loanAmount: editableLoanAmount,
+      });
+
+    } catch (error) {
+      console.error('Error submitting business loan application:', error);
+      Alert.alert(
+        'Submission Failed',
+        error.message || 'Failed to submit loan application. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -126,33 +269,75 @@ const BusinessLoanApplicationScreen = ({navigation, route}) => {
 
         {/* Form Fields */}
         <View style={styles.formGroup}>
-          {/* Business Name */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Business Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter registered business name"
-              placeholderTextColor="#71717a"
-              value={businessName}
-              onChangeText={setBusinessName}
-            />
-          </View>
-
           {/* Applicant Name */}
           <View style={styles.field}>
-            <Text style={styles.label}>Applicant Name</Text>
+            <Text style={styles.label}>Full Name (as per PAN) *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Person applied for this loan"
+              placeholder="Enter your full name"
               placeholderTextColor="#71717a"
               value={applicantName}
               onChangeText={setApplicantName}
             />
           </View>
 
+          {/* Email */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Email *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              placeholderTextColor="#71717a"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          {/* PAN */}
+          <View style={styles.field}>
+            <Text style={styles.label}>PAN Number *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="ABCDE1234F"
+              placeholderTextColor="#71717a"
+              value={pan}
+              onChangeText={(text) => setPan(text.toUpperCase())}
+              maxLength={10}
+              autoCapitalize="characters"
+            />
+          </View>
+
+          {/* Date of Birth */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Date of Birth *</Text>
+            <TouchableOpacity
+              style={styles.selectInput}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={[styles.selectText, !dateOfBirth && styles.placeholder]}>
+                {dateOfBirth || 'DD / MM / YYYY'}
+              </Text>
+              <Calendar size={16} color="#71717a" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Address Line */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Address *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your current address"
+              placeholderTextColor="#71717a"
+              value={addressLine}
+              onChangeText={setAddressLine}
+            />
+          </View>
+
           {/* City */}
           <View style={styles.field}>
-            <Text style={styles.label}>City</Text>
+            <Text style={styles.label}>City *</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter city name"
@@ -162,56 +347,91 @@ const BusinessLoanApplicationScreen = ({navigation, route}) => {
             />
           </View>
 
-          {/* Two Column Row */}
-          <View style={styles.twoColumnRow}>
-            {/* Business Vintage */}
-            <View style={[styles.field, {flex: 1}]}>
-              <Text style={styles.label}>Business Vintage</Text>
-              <TouchableOpacity
-                style={styles.selectInput}
-                onPress={() => setShowVintageModal(true)}
-              >
-                <Text
-                  style={[
-                    styles.selectText,
-                    !businessVintage && styles.placeholder,
-                  ]}
-                >
-                  {businessVintage
-                    ? vintageOptions.find((v) => v.value === businessVintage)
-                        ?.label
-                    : 'Select years'}
-                </Text>
-                <ChevronDown size={16} color="#71717a" />
-              </TouchableOpacity>
-            </View>
+          {/* Pincode */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Pincode *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter 6-digit pincode"
+              placeholderTextColor="#71717a"
+              value={pincode}
+              onChangeText={setPincode}
+              keyboardType="numeric"
+              maxLength={6}
+            />
+          </View>
 
-            {/* Annual Turnover */}
-            <View style={[styles.field, {flex: 1, marginLeft: 16}]}>
-              <Text style={styles.label}>Annual Turnover</Text>
-              <TouchableOpacity
-                style={styles.selectInput}
-                onPress={() => setShowTurnoverModal(true)}
-              >
-                <Text
-                  style={[
-                    styles.selectText,
-                    !annualTurnover && styles.placeholder,
-                  ]}
-                >
-                  {annualTurnover
-                    ? turnoverOptions.find((t) => t.value === annualTurnover)
-                        ?.label
-                    : 'Select turnover'}
-                </Text>
-                <ChevronDown size={16} color="#71717a" />
-              </TouchableOpacity>
-            </View>
+          {/* Residence Type */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Residence Type *</Text>
+            <TouchableOpacity
+              style={styles.selectInput}
+              onPress={() => setShowResidenceModal(true)}
+            >
+              <Text style={styles.selectText}>
+                {residenceType === 'OWNED' ? 'Owned' : residenceType === 'RENTED' ? 'Rented' : 'Parental'}
+              </Text>
+              <ChevronDown size={16} color="#71717a" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Business Name */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Business Name *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter registered business name"
+              placeholderTextColor="#71717a"
+              value={businessName}
+              onChangeText={setBusinessName}
+            />
+          </View>
+
+          {/* Business Type */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Business Type *</Text>
+            <TouchableOpacity
+              style={styles.selectInput}
+              onPress={() => setShowBusinessTypeModal(true)}
+            >
+              <Text style={styles.selectText}>
+                {businessType === 'PROPRIETORSHIP' ? 'Proprietorship' :
+                 businessType === 'PARTNERSHIP' ? 'Partnership' :
+                 businessType === 'PVT_LTD' ? 'Private Limited' : 'LLP'}
+              </Text>
+              <ChevronDown size={16} color="#71717a" />
+            </TouchableOpacity>
+          </View>
+
+          {/* GST Number - Optional */}
+          <View style={styles.field}>
+            <Text style={styles.label}>GST Number (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter GST number"
+              placeholderTextColor="#71717a"
+              value={gstNumber}
+              onChangeText={setGstNumber}
+              autoCapitalize="characters"
+            />
+          </View>
+
+          {/* Annual Turnover - Optional */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Annual Turnover (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter annual turnover"
+              placeholderTextColor="#71717a"
+              value={annualTurnover}
+              onChangeText={setAnnualTurnover}
+              keyboardType="numeric"
+            />
           </View>
 
           {/* Loan Amount */}
           <View style={styles.field}>
-            <Text style={styles.label}>Required Loan Amount</Text>
+            <Text style={styles.label}>Required Loan Amount *</Text>
             <View style={styles.loanAmountContainer}>
               <TextInput
                 style={styles.loanAmountInput}
@@ -242,46 +462,86 @@ const BusinessLoanApplicationScreen = ({navigation, route}) => {
       {/* Action Area */}
       <View style={styles.actionArea}>
         <TouchableOpacity
-          style={styles.proceedBtn}
+          style={[styles.proceedBtn, loading && styles.proceedBtnDisabled]}
           onPress={handleProceed}
+          disabled={loading}
         >
-          <Text style={styles.proceedBtnText}>Proceed</Text>
-          <ArrowRight size={18} color="#ffffff" />
+          {loading ? (
+            <ActivityIndicator color="#ffffff" size="small" />
+          ) : (
+            <>
+              <Text style={styles.proceedBtnText}>Proceed</Text>
+              <ArrowRight size={18} color="#ffffff" />
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Business Vintage Modal */}
+      {/* Date Picker Modal */}
       <Modal
-        visible={showVintageModal}
+        visible={showDatePicker}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowVintageModal(false)}
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowDatePicker(false)}
+          />
+          <View style={styles.datePickerContainer}>
+            <View style={styles.datePickerHeader}>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.cancelBtn}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.datePickerTitle}>Select Date of Birth</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.confirmBtn}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Residence Type Modal */}
+      <Modal
+        visible={showResidenceModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowResidenceModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Business Vintage</Text>
-              <TouchableOpacity onPress={() => setShowVintageModal(false)}>
+              <Text style={styles.modalTitle}>Select Residence Type</Text>
+              <TouchableOpacity onPress={() => setShowResidenceModal(false)}>
                 <Text style={styles.closeBtn}>✕</Text>
               </TouchableOpacity>
             </View>
-            {vintageOptions.map((option) => (
+            {['RENTED', 'OWNED', 'PARENTAL'].map((type) => (
               <TouchableOpacity
-                key={option.value}
+                key={type}
                 style={styles.modalOption}
                 onPress={() => {
-                  setBusinessVintage(option.value);
-                  setShowVintageModal(false);
+                  setResidenceType(type);
+                  setShowResidenceModal(false);
                 }}
               >
                 <Text
                   style={[
                     styles.modalOptionText,
-                    businessVintage === option.value &&
-                      styles.modalOptionTextActive,
+                    residenceType === type && styles.modalOptionTextActive,
                   ]}
                 >
-                  {option.label}
+                  {type}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -289,38 +549,37 @@ const BusinessLoanApplicationScreen = ({navigation, route}) => {
         </View>
       </Modal>
 
-      {/* Annual Turnover Modal */}
+      {/* Business Type Modal */}
       <Modal
-        visible={showTurnoverModal}
+        visible={showBusinessTypeModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowTurnoverModal(false)}
+        onRequestClose={() => setShowBusinessTypeModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Annual Turnover</Text>
-              <TouchableOpacity onPress={() => setShowTurnoverModal(false)}>
+              <Text style={styles.modalTitle}>Select Business Type</Text>
+              <TouchableOpacity onPress={() => setShowBusinessTypeModal(false)}>
                 <Text style={styles.closeBtn}>✕</Text>
               </TouchableOpacity>
             </View>
-            {turnoverOptions.map((option) => (
+            {['PROPRIETORSHIP', 'PARTNERSHIP', 'PVT_LTD', 'LLP'].map((type) => (
               <TouchableOpacity
-                key={option.value}
+                key={type}
                 style={styles.modalOption}
                 onPress={() => {
-                  setAnnualTurnover(option.value);
-                  setShowTurnoverModal(false);
+                  setBusinessType(type);
+                  setShowBusinessTypeModal(false);
                 }}
               >
                 <Text
                   style={[
                     styles.modalOptionText,
-                    annualTurnover === option.value &&
-                      styles.modalOptionTextActive,
+                    businessType === type && styles.modalOptionTextActive,
                   ]}
                 >
-                  {option.label}
+                  {type}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -526,6 +785,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 
+  proceedBtnDisabled: {
+    opacity: 0.6,
+  },
+
   // Modal
   modalOverlay: {
     flex: 1,
@@ -578,6 +841,50 @@ const styles = StyleSheet.create({
   modalOptionTextActive: {
     color: '#8b5cf6',
     fontWeight: '600',
+  },
+
+  // Date Picker Modal Styles
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+
+  datePickerContainer: {
+    backgroundColor: '#141417',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#27272a',
+  },
+
+  datePickerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+
+  cancelBtn: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#71717a',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+
+  confirmBtn: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#8b5cf6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
 });
 

@@ -81,7 +81,7 @@ export const forgotPassword = async email => {
   try {
     const response = await axiosInstance.post(
       API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
-      {email},
+      { email },
     );
 
     return {
@@ -174,6 +174,126 @@ export const refreshToken = async refreshTokenValue => {
   }
 };
 
+/**
+ * Send OTP to mobile number
+ */
+export const sendOtp = async (mobile, loanType = null) => {
+  try {
+    const payload = { mobile };
+    if (loanType) {
+      payload.loanType = loanType;
+    }
+
+    const response = await axiosInstance.post(API_ENDPOINTS.AUTH.SEND_OTP, payload);
+
+    return {
+      success: true,
+      data: response.data.data,
+      message: 'OTP sent successfully',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'Failed to send OTP',
+      error,
+    };
+  }
+};
+
+/**
+ * Verify OTP and login
+ */
+export const verifyOtp = async (mobile, otp, loanType = null) => {
+  try {
+    const payload = { mobile, otp };
+    if (loanType) {
+      payload.loanType = loanType;
+    }
+
+    const response = await axiosInstance.post(API_ENDPOINTS.AUTH.VERIFY_OTP, payload);
+
+    // Extract data from response
+    const { token, refreshToken: refresh, data } = response.data;
+
+    return {
+      success: true,
+      data: {
+        token,
+        refreshToken: refresh,
+        user: data,
+      },
+      message: 'OTP verified successfully',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'OTP verification failed',
+      error,
+    };
+  }
+};
+
+/**
+ * Get user profile
+ */
+export const getProfile = async () => {
+  try {
+    const response = await axiosInstance.get('/user/profile');
+    return {
+      success: true,
+      data: response.data.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'Failed to fetch profile',
+      error,
+    };
+  }
+};
+
+/**
+ * Update personal profile
+ * @param {Object} data - Personal details { firstName, lastName, email, dob, pan, address }
+ */
+export const updatePersonalProfile = async (data) => {
+  try {
+    const response = await axiosInstance.put('/user/profile/personal', data);
+    return {
+      success: true,
+      data: response.data,
+      message: 'Personal details updated successfully',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'Failed to update personal details',
+      error,
+    };
+  }
+};
+
+/**
+ * Update employment profile
+ * @param {Object} data - Employment details
+ */
+export const updateEmploymentProfile = async (data) => {
+  try {
+    const response = await axiosInstance.put('/user/profile/employment', data);
+    return {
+      success: true,
+      data: response.data,
+      message: 'Employment details updated successfully',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'Failed to update employment details',
+      error,
+    };
+  }
+};
+
 export const authService = {
   login,
   signup,
@@ -182,6 +302,12 @@ export const authService = {
   resetPassword,
   changePassword,
   refreshToken,
+  sendOtp,
+  verifyOtp,
+  getProfile,
+  updatePersonalProfile,
+  updateEmploymentProfile,
 };
 
 export default authService;
+

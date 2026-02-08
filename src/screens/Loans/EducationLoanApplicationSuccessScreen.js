@@ -10,20 +10,31 @@ import {
   StyleSheet,
   StatusBar,
   TouchableOpacity,
+  BackHandler,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useFocusEffect} from '@react-navigation/native';
 import {X, CheckCircle, Phone, MessageCircle, ArrowRight} from 'lucide-react-native';
 
 const EducationLoanApplicationSuccessScreen = ({navigation, route}) => {
-  const {applicationData} = route.params || {};
+  const {applicationId, applicationData, lenderName, loanAmount} = route.params || {};
 
-  // Generate Application ID
-  const generateApplicationID = () => {
-    const randomNum = Math.floor(Math.random() * 10000);
-    return `EDU-${Math.floor(Math.random() * 10000)}-${randomNum}`;
-  };
+  // Use real applicationId from backend
+  const applicationID = applicationId || 'N/A';
 
-  const applicationID = React.useMemo(() => generateApplicationID(), []);
+  // Prevent back navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        // Return true to prevent going back
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [])
+  );
 
   const handleCallSupport = () => {
     // In a real app, this would trigger a phone call
@@ -40,6 +51,14 @@ const EducationLoanApplicationSuccessScreen = ({navigation, route}) => {
     navigation.navigate('LoanApplicationStatus');
   };
 
+  const handleClose = () => {
+    // Navigate to Home instead of going back
+    navigation.reset({
+      index: 0,
+      routes: [{name: 'Home'}],
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="light-content" backgroundColor="#09090b" />
@@ -48,7 +67,7 @@ const EducationLoanApplicationSuccessScreen = ({navigation, route}) => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.closeBtn}
-          onPress={() => navigation.goBack()}
+          onPress={handleClose}
         >
           <X size={20} color="#ffffff" />
         </TouchableOpacity>

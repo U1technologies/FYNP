@@ -14,6 +14,9 @@ const API_ENDPOINTS = {
     RESET_PASSWORD: '/auth/reset-password',
     VERIFY_EMAIL: '/auth/verify-email',
     CHANGE_PASSWORD: '/auth/change-password',
+    SEND_OTP: '/auth/send-otp',
+    VERIFY_OTP: '/auth/verify-otp',
+    RESEND_OTP: '/auth/resend-otp',
   },
 
   // User Endpoints
@@ -58,6 +61,18 @@ const API_ENDPOINTS = {
     SUMMARY: '/dashboard/summary',
     RECENT_TRANSACTIONS: '/dashboard/recent-transactions',
     ANALYTICS: '/dashboard/analytics',
+  },
+
+  // Loan Endpoints
+  LOANS: {
+    CREATE: '/loans/applications',
+    LIST: '/loans/applications',
+    GET: id => `/loans/applications/${id}`,
+    STATUS: id => `/loans/applications/${id}/status`,
+    DELETE: id => `/loans/applications/${id}`,
+    SAVE_DETAILS: id => `/loans/applications/${id}/details`,
+    UPLOAD_DOCUMENTS: id => `/loans/applications/${id}/documents`,
+    SUBMIT: id => `/loans/applications/${id}/submit`,
   },
 };
 

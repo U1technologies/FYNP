@@ -16,15 +16,10 @@ import {CheckCircle, Phone, ArrowRight} from 'lucide-react-native';
 import {colors} from '../../theme';
 
 const KYCVerificationScreen = ({navigation, route}) => {
-  const formData = route.params || {};
+  const {applicationId, applicationData, bankName, loanAmount} = route.params || {};
 
-  // Generate a random Application ID
-  const generateApplicationID = () => {
-    const randomNum = Math.floor(Math.random() * 10000000);
-    return `FYNP-${randomNum}`;
-  };
-
-  const applicationID = React.useMemo(() => generateApplicationID(), []);
+  // Use real application ID from backend
+  const applicationID = applicationId || 'N/A';
 
   const handleGoHome = () => {
     navigation.navigate('Dashboard');

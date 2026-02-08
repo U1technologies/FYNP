@@ -46,6 +46,8 @@ import {
 
 import { useFocusEffect } from '@react-navigation/native';
 import { useThemeStore } from '../../store/themeStore';
+import { useAuthStore } from '../../store/authStore';
+import { authService } from '../../services/authService';
 
 const DashboardScreen = ({ navigation }) => {
   const { isDarkMode } = useThemeStore();
@@ -74,7 +76,22 @@ const DashboardScreen = ({ navigation }) => {
   const sectionTitleColor = theme.textPrimary;
   const descTextColor = theme.textSecondary;
 
-  const userName = 'Arjun';
+  const { user, updateUser } = useAuthStore();
+  const userName = user?.personal?.firstName || 'Guest';
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const response = await authService.getProfile();
+      if (response.success && response.data?.user) {
+        // Merge with existing user (to keep tokens if any) or replace?
+        // Usually replace user data but keep tokens.
+        // store's setUser replaces 'user' object.
+        updateUser(response.data.user);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   const [activeTab, setActiveTab] = React.useState('Home');
   const scrollX = useRef(new Animated.Value(0)).current;
 
@@ -117,7 +134,7 @@ const DashboardScreen = ({ navigation }) => {
     if (screenName === 'Home') {
       navigation.navigate('Home');
     } else if (screenName === 'Status') {
-      navigation.navigate('Portfolio');
+      navigation.navigate('LoanApplicationStatus');
     } else if (screenName === 'Account') {
       navigation.navigate('Account');
     } else if (screenName === 'Offers') {
@@ -131,18 +148,22 @@ const DashboardScreen = ({ navigation }) => {
 
       {/* Header */}
       <View style={styles.homeHeader}>
-        <View style={styles.headerLeft}>
-          <View style={[styles.headerAvatar, { borderColor: isDarkMode ? currentBorder : primaryOrange, backgroundColor: isDarkMode ? currentBorder : 'rgba(255, 145, 77, 0.2)' }]}>
-            <Image
-              source={{ uri: 'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSouth%20Asian%2F3' }}
-              style={styles.avatarImage}
-            />
+        <TouchableOpacity style={styles.headerLeft} onPress={() => handleNavigation('Account')}>
+          <View style={[styles.headerAvatar, {
+            borderColor: primaryOrange,
+            backgroundColor: '#ffffff',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }]}>
+            <Text style={{ color: primaryOrange, fontSize: 18, fontWeight: 'bold' }}>
+              {(userName || 'G').charAt(0).toUpperCase()}
+            </Text>
           </View>
           <View style={styles.headerTextGroup}>
             <Text style={[styles.headerGreeting, { color: descTextColor }]}>{getGreeting()},</Text>
             <Text style={[styles.headerUsername, { color: currentText }]}>{userName}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity style={[styles.actionBtn, { backgroundColor: iconBgColor, borderColor: isDarkMode ? currentBorder : primaryOrange }]}>
             <Bell size={18} color={iconColor} />
@@ -580,6 +601,7 @@ const styles = StyleSheet.create({
 
   section: {
     gap: 12,
+    marginTop: 16,
   },
 
   sectionFullWidth: {

@@ -15,6 +15,7 @@ import {
   Platform,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -27,19 +28,58 @@ import {
   Store,
   ShieldCheck,
 } from 'lucide-react-native';
+import * as loanService from '../../services/loanService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoanBasicDetailsScreen = ({navigation, route}) => {
-  const {bankName, loanAmount, tenure, emi} = route.params || {};
+  const {bankName, loanAmount, tenure, emi, interestRate} = route.params || {};
 
+  // Personal details
   const [fullName, setFullName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [pan, setPan] = React.useState('');
+  const [mobile, setMobile] = React.useState('');
   const [dateOfBirth, setDateOfBirth] = React.useState('');
   const [selectedDate, setSelectedDate] = React.useState(new Date());
   const [showDatePicker, setShowDatePicker] = React.useState(false);
-  const [employmentType, setEmploymentType] = React.useState('Salaried');
-  const [monthlyIncome, setMonthlyIncome] = React.useState('');
-  const [companyName, setCompanyName] = React.useState('');
-  const [annualTurnover, setAnnualTurnover] = React.useState('');
+
+  // Address details
+  const [addressLine, setAddressLine] = React.useState('');
+  const [city, setCity] = React.useState('');
   const [pincode, setPincode] = React.useState('');
+  const [residenceType, setResidenceType] = React.useState('RENTED');
+  const [showResidenceModal, setShowResidenceModal] = React.useState(false);
+
+  // Employment details
+  const [employmentType, setEmploymentType] = React.useState('Salaried');
+  const [employerName, setEmployerName] = React.useState('');
+  const [monthlyIncome, setMonthlyIncome] = React.useState('');
+  const [profession, setProfession] = React.useState('');
+  const [annualIncome, setAnnualIncome] = React.useState('');
+
+  // Business details
+  const [companyName, setCompanyName] = React.useState('');
+  const [businessType, setBusinessType] = React.useState('PROPRIETORSHIP');
+  const [annualTurnover, setAnnualTurnover] = React.useState('');
+  const [showBusinessTypeModal, setShowBusinessTypeModal] = React.useState(false);
+
+  const [loading, setLoading] = React.useState(false);
+
+  // Load mobile number from AsyncStorage
+  React.useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setMobile(user.mobile || '');
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+    loadUserData();
+  }, []);
 
   const formatDate = (date) => {
     const day = String(date.getDate()).padStart(2, '0');
@@ -64,9 +104,36 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
       return { valid: false, message: 'Please enter your full name' };
     }
 
+    // Validate Email
+    if (!email || email.trim() === '') {
+      return { valid: false, message: 'Please enter your email' };
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { valid: false, message: 'Please enter a valid email' };
+    }
+
+    // Validate PAN
+    if (!pan || pan.trim() === '') {
+      return { valid: false, message: 'Please enter your PAN number' };
+    }
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panRegex.test(pan.toUpperCase())) {
+      return { valid: false, message: 'Please enter a valid PAN (e.g., ABCDE1234F)' };
+    }
+
     // Validate Date of Birth
     if (!dateOfBirth || dateOfBirth === '') {
       return { valid: false, message: 'Please select your date of birth' };
+    }
+
+    // Validate Address
+    if (!addressLine || addressLine.trim() === '') {
+      return { valid: false, message: 'Please enter your address' };
+    }
+
+    if (!city || city.trim() === '') {
+      return { valid: false, message: 'Please enter your city' };
     }
 
     // Validate Pincode
@@ -84,22 +151,28 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
 
     // Validate employment-specific fields
     if (employmentType === 'Salaried') {
+      if (!employerName || employerName.trim() === '') {
+        return { valid: false, message: 'Please enter your employer name' };
+      }
       if (!monthlyIncome || monthlyIncome.trim() === '') {
         return { valid: false, message: 'Please enter your monthly income' };
       }
-    } else if (employmentType === 'Self-Employed') {
-      if (!companyName || companyName.trim() === '') {
-        return { valid: false, message: 'Please enter your company/business name' };
+    } else if (employmentType === 'Self-Employed Professional') {
+      if (!profession || profession.trim() === '') {
+        return { valid: false, message: 'Please enter your profession' };
       }
-      if (!annualTurnover || annualTurnover.trim() === '') {
-        return { valid: false, message: 'Please enter your annual turnover' };
+      if (!annualIncome || annualIncome.trim() === '') {
+        return { valid: false, message: 'Please enter your annual income' };
       }
+    } else if (employmentType === 'Self-Employed Business') {
+      // Business Type and Annual Turnover are optional for Personal Loan
+      // No required validation needed
     }
 
     return { valid: true, message: '' };
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const validation = validateForm();
 
     if (!validation.valid) {
@@ -107,27 +180,110 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
       return;
     }
 
-    // All validations passed - proceed with navigation
-    const formData = {
-      bankName,
-      loanAmount,
-      tenure,
-      emi,
-      fullName: fullName.trim(),
-      dateOfBirth,
-      employmentType,
-      pincode,
-    };
+    setLoading(true);
 
-    // Add employment-specific fields
-    if (employmentType === 'Salaried') {
-      formData.monthlyIncome = monthlyIncome.trim();
-    } else {
-      formData.companyName = companyName.trim();
-      formData.annualTurnover = annualTurnover.trim();
+    try {
+      // Step 1: Create draft application
+      const draftResponse = await loanService.createLoanApplication('PERSONAL_LOAN');
+
+      if (!draftResponse.success || !draftResponse.data) {
+        throw new Error('Failed to create loan application');
+      }
+
+      const applicationId = draftResponse.data.applicationId;
+
+      // Step 2: Prepare loan details for backend (nested structure matching website)
+      const loanDetails = {
+        personal: {
+          fullName: fullName.trim(),
+          email: email.trim(),
+          pan: pan.trim().toUpperCase(),
+          mobile: mobile,
+          dob: dateOfBirth,
+        },
+        address: {
+          current: {
+            line1: addressLine.trim(),
+            city: city.trim(),
+            pincode: pincode.trim(),
+            residenceType: residenceType,
+          },
+          permanent: {
+            line1: addressLine.trim(),
+            city: city.trim(),
+            pincode: pincode.trim(),
+            residenceType: residenceType,
+          },
+        },
+        loan: {
+          requestedAmount: parseInt(loanAmount),
+          tenure: parseInt(tenure),
+        },
+      };
+
+      // Add employment or business data based on type
+      if (employmentType === 'Salaried') {
+        loanDetails.employment = {
+          employmentType: 'SALARIED',
+          employerName: employerName.trim(),
+          monthlyIncome: parseInt(monthlyIncome),
+        };
+      } else if (employmentType === 'Self-Employed Professional') {
+        loanDetails.employment = {
+          employmentType: 'SELF_EMPLOYED_PROFESSIONAL',
+          profession: profession.trim(),
+          annualIncome: parseInt(annualIncome),
+        };
+      } else if (employmentType === 'Self-Employed Business') {
+        loanDetails.employment = {
+          employmentType: 'SELF_EMPLOYED_BUSINESS',
+        };
+        // Business fields are optional for Personal Loan
+        if (businessType || annualTurnover) {
+          loanDetails.business = {};
+          if (businessType) {
+            loanDetails.business.businessType = businessType;
+          }
+          if (annualTurnover && annualTurnover.trim()) {
+            loanDetails.business.annualTurnover = parseInt(annualTurnover);
+          }
+        }
+      }
+
+      // Step 3: Save loan details
+      const detailsResponse = await loanService.saveLoanDetails(applicationId, loanDetails);
+
+      if (!detailsResponse.success) {
+        throw new Error('Failed to save loan details');
+      }
+
+      // Step 4: Submit application
+      const submitResponse = await loanService.submitLoanApplication(applicationId);
+
+      if (!submitResponse.success) {
+        throw new Error('Failed to submit loan application');
+      }
+
+      // Step 5: Navigate to success screen with real application data
+      navigation.navigate('KYCVerification', {
+        applicationId: applicationId,
+        applicationData: submitResponse.data,
+        bankName,
+        loanAmount,
+        tenure,
+        emi,
+      });
+
+    } catch (error) {
+      console.error('Error submitting loan application:', error);
+      Alert.alert(
+        'Submission Failed',
+        error.message || 'Failed to submit loan application. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
     }
-
-    navigation.navigate('KYCVerification', formData);
   };
 
   return (
@@ -160,7 +316,7 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
 
         {/* Full Name Field */}
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Full Name</Text>
+          <Text style={styles.label}>Full Name (as per PAN) *</Text>
           <View style={styles.inputField}>
             <TextInput
               style={styles.inputText}
@@ -169,13 +325,44 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
               placeholder="Enter your full name"
               placeholderTextColor="#71717a"
             />
-            <CheckCircle size={18} color="#22c55e" />
+          </View>
+        </View>
+
+        {/* Email Field */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Email *</Text>
+          <View style={styles.inputField}>
+            <TextInput
+              style={styles.inputText}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              placeholderTextColor="#71717a"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
+
+        {/* PAN Field */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>PAN Number *</Text>
+          <View style={styles.inputField}>
+            <TextInput
+              style={styles.inputText}
+              value={pan}
+              onChangeText={(text) => setPan(text.toUpperCase())}
+              placeholder="ABCDE1234F"
+              placeholderTextColor="#71717a"
+              maxLength={10}
+              autoCapitalize="characters"
+            />
           </View>
         </View>
 
         {/* Date of Birth Field */}
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Date of Birth</Text>
+          <Text style={styles.label}>Date of Birth *</Text>
           <View style={styles.inputField}>
             <TextInput
               style={styles.inputText}
@@ -190,9 +377,67 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
           </View>
         </View>
 
+        {/* Address Line Field */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Address *</Text>
+          <View style={styles.inputField}>
+            <TextInput
+              style={styles.inputText}
+              value={addressLine}
+              onChangeText={setAddressLine}
+              placeholder="Enter your current address"
+              placeholderTextColor="#71717a"
+            />
+          </View>
+        </View>
+
+        {/* City Field */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>City *</Text>
+          <View style={styles.inputField}>
+            <TextInput
+              style={styles.inputText}
+              value={city}
+              onChangeText={setCity}
+              placeholder="Enter your city"
+              placeholderTextColor="#71717a"
+            />
+          </View>
+        </View>
+
+        {/* Pincode Field */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Pincode *</Text>
+          <View style={styles.inputField}>
+            <TextInput
+              style={styles.inputText}
+              value={pincode}
+              onChangeText={setPincode}
+              placeholder="Enter 6-digit pincode"
+              placeholderTextColor="#71717a"
+              keyboardType="numeric"
+              maxLength={6}
+            />
+          </View>
+        </View>
+
+        {/* Residence Type Field */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Residence Type *</Text>
+          <TouchableOpacity
+            style={styles.inputField}
+            onPress={() => setShowResidenceModal(true)}
+          >
+            <Text style={styles.inputText}>
+              {residenceType === 'OWNED' ? 'Owned' : residenceType === 'RENTED' ? 'Rented' : 'Parental'}
+            </Text>
+            <ArrowRight size={18} color="#71717a" />
+          </TouchableOpacity>
+        </View>
+
         {/* Employment Type Selection */}
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Employment Type</Text>
+          <Text style={styles.label}>Employment Type *</Text>
           <View style={styles.selectionGrid}>
             <TouchableOpacity
               style={[
@@ -202,7 +447,7 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
               onPress={() => setEmploymentType('Salaried')}
             >
               <Briefcase
-                size={24}
+                size={20}
                 color={
                   employmentType === 'Salaried' ? '#8b5cf6' : '#71717a'
                 }
@@ -213,54 +458,121 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
             <TouchableOpacity
               style={[
                 styles.selectionCard,
-                employmentType === 'Self-Employed' &&
+                employmentType === 'Self-Employed Professional' &&
                   styles.selectionCardActive,
               ]}
-              onPress={() => setEmploymentType('Self-Employed')}
+              onPress={() => setEmploymentType('Self-Employed Professional')}
             >
-              <Store
-                size={24}
+              <Briefcase
+                size={20}
                 color={
-                  employmentType === 'Self-Employed' ? '#8b5cf6' : '#71717a'
+                  employmentType === 'Self-Employed Professional' ? '#8b5cf6' : '#71717a'
                 }
               />
-              <Text style={styles.selectionText}>Self-Employed</Text>
+              <Text style={[styles.selectionText, {fontSize: 12}]}>Professional</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.selectionCard,
+                employmentType === 'Self-Employed Business' &&
+                  styles.selectionCardActive,
+              ]}
+              onPress={() => setEmploymentType('Self-Employed Business')}
+            >
+              <Store
+                size={20}
+                color={
+                  employmentType === 'Self-Employed Business' ? '#8b5cf6' : '#71717a'
+                }
+              />
+              <Text style={[styles.selectionText, {fontSize: 12}]}>Business</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Employment Specific Fields */}
-        {employmentType === 'Salaried' ? (
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Monthly Income</Text>
-            <View style={styles.inputField}>
-              <TextInput
-                style={styles.inputText}
-                value={monthlyIncome}
-                onChangeText={setMonthlyIncome}
-                placeholder="Enter monthly income"
-                placeholderTextColor="#71717a"
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-        ) : (
+        {employmentType === 'Salaried' && (
           <>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Company/Business Name</Text>
+              <Text style={styles.label}>Employer Name *</Text>
               <View style={styles.inputField}>
                 <TextInput
                   style={styles.inputText}
-                  value={companyName}
-                  onChangeText={setCompanyName}
-                  placeholder="Enter company or business name"
+                  value={employerName}
+                  onChangeText={setEmployerName}
+                  placeholder="Enter your company name"
                   placeholderTextColor="#71717a"
                 />
               </View>
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Annual Turnover</Text>
+              <Text style={styles.label}>Monthly Income *</Text>
+              <View style={styles.inputField}>
+                <TextInput
+                  style={styles.inputText}
+                  value={monthlyIncome}
+                  onChangeText={setMonthlyIncome}
+                  placeholder="Enter monthly income"
+                  placeholderTextColor="#71717a"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          </>
+        )}
+
+        {employmentType === 'Self-Employed Professional' && (
+          <>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Profession *</Text>
+              <View style={styles.inputField}>
+                <TextInput
+                  style={styles.inputText}
+                  value={profession}
+                  onChangeText={setProfession}
+                  placeholder="Enter your profession (e.g., Doctor, CA)"
+                  placeholderTextColor="#71717a"
+                />
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Annual Income *</Text>
+              <View style={styles.inputField}>
+                <TextInput
+                  style={styles.inputText}
+                  value={annualIncome}
+                  onChangeText={setAnnualIncome}
+                  placeholder="Enter annual income"
+                  placeholderTextColor="#71717a"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          </>
+        )}
+
+        {employmentType === 'Self-Employed Business' && (
+          <>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Business Type (Optional)</Text>
+              <TouchableOpacity
+                style={styles.inputField}
+                onPress={() => setShowBusinessTypeModal(true)}
+              >
+                <Text style={styles.inputText}>
+                  {businessType === 'PROPRIETORSHIP' ? 'Proprietorship' :
+                   businessType === 'PARTNERSHIP' ? 'Partnership' :
+                   businessType === 'PVT_LTD' ? 'Private Limited' : 'LLP'}
+                </Text>
+                <ArrowRight size={18} color="#71717a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Annual Turnover (Optional)</Text>
               <View style={styles.inputField}>
                 <TextInput
                   style={styles.inputText}
@@ -288,33 +600,24 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
           </View>
         </View>
 
-        {/* Pincode Field */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Pincode</Text>
-          <View style={styles.inputField}>
-            <TextInput
-              style={styles.inputText}
-              value={pincode}
-              onChangeText={setPincode}
-              placeholder="Enter current residence pincode"
-              placeholderTextColor="#71717a"
-              keyboardType="numeric"
-              maxLength={6}
-            />
-          </View>
-        </View>
-
         <View style={{height: 20}} />
       </ScrollView>
 
       {/* Action Area */}
       <View style={styles.actionArea}>
         <TouchableOpacity
-          style={styles.primaryBtn}
+          style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
           onPress={handleContinue}
+          disabled={loading}
         >
-          <Text style={styles.primaryBtnText}>Continue</Text>
-          <ArrowRight size={18} color="#ffffff" />
+          {loading ? (
+            <ActivityIndicator color="#ffffff" size="small" />
+          ) : (
+            <>
+              <Text style={styles.primaryBtnText}>Continue</Text>
+              <ArrowRight size={18} color="#ffffff" />
+            </>
+          )}
         </TouchableOpacity>
         <View style={styles.trustBadge}>
           <ShieldCheck size={12} color="#71717a" />
@@ -354,6 +657,97 @@ const LoanBasicDetailsScreen = ({navigation, route}) => {
               onChange={handleDateChange}
               maximumDate={new Date()}
             />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Residence Type Modal */}
+      <Modal
+        visible={showResidenceModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowResidenceModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowResidenceModal(false)}
+          />
+          <View style={styles.datePickerContainer}>
+            <View style={styles.datePickerHeader}>
+              <TouchableOpacity onPress={() => setShowResidenceModal(false)}>
+                <Text style={styles.cancelBtn}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.datePickerTitle}>Select Residence Type</Text>
+              <TouchableOpacity onPress={() => setShowResidenceModal(false)}>
+                <Text style={styles.confirmBtn}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{padding: 20}}>
+              {['OWNED', 'RENTED', 'PARENTAL'].map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={{paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#27272a'}}
+                  onPress={() => {
+                    setResidenceType(type);
+                    setShowResidenceModal(false);
+                  }}
+                >
+                  <Text style={{color: residenceType === type ? '#8b5cf6' : '#ffffff', fontSize: 16}}>
+                    {type === 'OWNED' ? 'Owned' : type === 'RENTED' ? 'Rented' : 'Parental'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Business Type Modal */}
+      <Modal
+        visible={showBusinessTypeModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowBusinessTypeModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowBusinessTypeModal(false)}
+          />
+          <View style={styles.datePickerContainer}>
+            <View style={styles.datePickerHeader}>
+              <TouchableOpacity onPress={() => setShowBusinessTypeModal(false)}>
+                <Text style={styles.cancelBtn}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.datePickerTitle}>Select Business Type</Text>
+              <TouchableOpacity onPress={() => setShowBusinessTypeModal(false)}>
+                <Text style={styles.confirmBtn}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{padding: 20}}>
+              {[
+                {value: 'PROPRIETORSHIP', label: 'Proprietorship'},
+                {value: 'PARTNERSHIP', label: 'Partnership'},
+                {value: 'PVT_LTD', label: 'Private Limited'},
+                {value: 'LLP', label: 'LLP'},
+              ].map((type) => (
+                <TouchableOpacity
+                  key={type.value}
+                  style={{paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#27272a'}}
+                  onPress={() => {
+                    setBusinessType(type.value);
+                    setShowBusinessTypeModal(false);
+                  }}
+                >
+                  <Text style={{color: businessType === type.value ? '#8b5cf6' : '#ffffff', fontSize: 16}}>
+                    {type.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
       </Modal>
@@ -461,7 +855,7 @@ const styles = StyleSheet.create({
   // Selection Grid
   selectionGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
 
   selectionCard: {
@@ -470,10 +864,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#27272a',
     borderRadius: 10,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
 
   selectionCardActive: {
@@ -522,6 +916,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     letterSpacing: 0.3,
+  },
+
+  primaryBtnDisabled: {
+    opacity: 0.6,
   },
 
   // Trust Badge
