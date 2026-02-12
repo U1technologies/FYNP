@@ -3,7 +3,7 @@
  * Centralized access to environment variables
  */
 
-import { API_URL, API_TIMEOUT, ENV } from '@env';
+import { API_URL, API_TIMEOUT, ENV, OTP_BYPASS } from '@env';
 
 const config = {
   // API Configuration
@@ -14,6 +14,9 @@ const config = {
   env: ENV || 'development',
   isDevelopment: ENV === 'development',
   isProduction: ENV === 'production',
+
+  // OTP Bypass for Development (saves SMS costs)
+  otpBypass: OTP_BYPASS === 'true',
 
   // App Configuration
   appName: 'FYNP',

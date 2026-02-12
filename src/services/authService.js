@@ -5,6 +5,7 @@
 
 import axiosInstance from './api/axiosInstance';
 import API_ENDPOINTS from './api/apiEndpoints';
+import config from '../config/env';
 
 /**
  * Login user
@@ -179,6 +180,25 @@ export const refreshToken = async refreshTokenValue => {
  */
 export const sendOtp = async (mobile, loanType = null) => {
   try {
+    // 🔥 DEV MODE: OTP BYPASS - Skip sending real SMS
+    if (config.otpBypass) {
+      console.log('🔥 DEV MODE: OTP Bypass Active - Skipping SMS send');
+      console.log('💡 You can enter ANY 6-digit OTP to login');
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      return {
+        success: true,
+        data: {
+          message: 'OTP bypassed (DEV MODE)',
+          mobile: mobile,
+        },
+        message: 'OTP sent successfully (DEV MODE - Enter any 6-digit code)',
+      };
+    }
+
+    // 🔒 PRODUCTION MODE: Real OTP send
     const payload = { mobile };
     if (loanType) {
       payload.loanType = loanType;
@@ -205,6 +225,32 @@ export const sendOtp = async (mobile, loanType = null) => {
  */
 export const verifyOtp = async (mobile, otp, loanType = null) => {
   try {
+    // 🔥 DEV MODE: OTP BYPASS - Any OTP works!
+    if (config.otpBypass) {
+      console.log('🔥 DEV MODE: OTP Bypass Active - Skipping real OTP verification');
+
+      // Simulate API delay for realistic behavior
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Return mock success response
+      return {
+        success: true,
+        data: {
+          token: 'mock-jwt-token-' + Date.now(),
+          refreshToken: 'mock-refresh-token-' + Date.now(),
+          user: {
+            _id: 'mock-user-id',
+            mobile: mobile,
+            personal: {
+              mobile: mobile,
+            },
+          },
+        },
+        message: 'OTP verified successfully (DEV MODE)',
+      };
+    }
+
+    // 🔒 PRODUCTION MODE: Real OTP verification
     const payload = { mobile, otp };
     if (loanType) {
       payload.loanType = loanType;
