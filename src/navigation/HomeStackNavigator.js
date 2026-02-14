@@ -7,6 +7,11 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import CreditCardsScreen from '../screens/CreditCards/CreditCardsScreen';
+import CreditCardPreferencesScreen from '../screens/CreditCards/CreditCardPreferencesScreen';
+import CreditCardLifestyleScreen from '../screens/CreditCards/CreditCardLifestyleScreen';
+import CreditCardIncomeScreen from '../screens/CreditCards/CreditCardIncomeScreen';
+import CreditCardSpendsScreen from '../screens/CreditCards/CreditCardSpendsScreen';
+import CreditScoreScreen from '../screens/CreditScore/CreditScoreScreen';
 import SelectLenderScreen from '../screens/PersonalLoans/SelectLenderScreen';
 import KYCVerificationScreen from '../screens/PersonalLoans/KYCVerificationScreen';
 import PersonalLoansScreen from '../screens/Loans/PersonalLoansScreen';
@@ -55,7 +60,12 @@ const HomeStackNavigator = () => {
       <Stack.Screen name="EducationLoanApplication" component={EducationLoanApplicationScreen} />
       <Stack.Screen name="EducationLoanApplicationSuccess" component={EducationLoanApplicationSuccessScreen} />
       <Stack.Screen name="LoanDetails" component={LoanDetailsScreen} />
+      <Stack.Screen name="CreditCardPreferences" component={CreditCardPreferencesScreen} />
+      <Stack.Screen name="CreditCardLifestyle" component={CreditCardLifestyleScreen} />
+      <Stack.Screen name="CreditCardIncome" component={CreditCardIncomeScreen} />
+      <Stack.Screen name="CreditCardSpends" component={CreditCardSpendsScreen} />
       <Stack.Screen name="CreditCards" component={CreditCardsScreen} />
+      <Stack.Screen name="CreditScore" component={CreditScoreScreen} />
       <Stack.Screen name="SelectLender" component={SelectLenderScreen} />
       <Stack.Screen name="KYCVerification" component={KYCVerificationScreen} />
       <Stack.Screen name="EMICalculator" component={EMICalculatorScreen} />

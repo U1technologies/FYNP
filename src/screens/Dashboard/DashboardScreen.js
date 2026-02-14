@@ -23,9 +23,9 @@ import {
   Wallet,
   GraduationCap,
   Briefcase,
-  Clock3,
-  ShoppingBag,
   House,
+  CreditCard,
+  Gauge,
   FileBadge,
   Calculator,
   BarChart3,
@@ -271,7 +271,7 @@ const DashboardScreen = ({ navigation }) => {
             </View>
           </TouchableOpacity>
 
-          {/* Product Grid */}
+          {/* Product Grid - 2x2 Layout */}
           <View style={styles.grid2Col}>
             {/* Personal Loan */}
             <TouchableOpacity
@@ -306,7 +306,43 @@ const DashboardScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Business Loan - Full Width */}
+          {/* Second Row - Credit Score & Credit Cards */}
+          <View style={styles.grid2Col}>
+            {/* Credit Score Card */}
+            <TouchableOpacity
+              style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}
+              onPress={() => navigation.navigate('CreditScore')}
+            >
+              <View style={[styles.bentoTag, { backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)' }]}>
+                <Text style={[styles.bentoTagText, { color: '#3b82f6' }]}>FREE</Text>
+              </View>
+              <View style={[styles.bentoIconBox, { backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)' }]}>
+                <Gauge size={20} color="#3b82f6" />
+              </View>
+              <Text style={[styles.bentoTitle, { color: currentText }]}>Credit score</Text>
+              <Text style={[styles.bentoText, { color: descTextColor }]}>Check score & report in 2 taps.</Text>
+            </TouchableOpacity>
+
+            {/* Credit Cards Card */}
+            <TouchableOpacity
+              style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}
+              onPress={() => navigation.navigate('CreditCardPreferences')}
+            >
+              <View style={[styles.bentoTag, { backgroundColor: isDarkMode ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.1)' }]}>
+                <Text style={[styles.bentoTagText, { color: '#22c55e' }]}>OFFERS</Text>
+              </View>
+              <View style={[styles.bentoIconBox, { backgroundColor: isDarkMode ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.1)' }]}>
+                <CreditCard size={20} color="#8b5cf6" />
+              </View>
+              <Text style={[styles.bentoTitle, { color: currentText }]}>Credit cards</Text>
+              <Text style={[styles.bentoText, { color: descTextColor }]}>Best cards picked for you.</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Business & MSME Loans */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: currentText }]}>Business & MSME Loans</Text>
           <TouchableOpacity
             style={[styles.bentoCardWide, { backgroundColor: currentCard, borderColor: currentBorder }]}
             onPress={() => navigation.navigate('BusinessLoans')}
@@ -320,28 +356,6 @@ const DashboardScreen = ({ navigation }) => {
             </View>
             <ChevronRight size={20} color={iconColor} />
           </TouchableOpacity>
-        </View>
-
-        {/* Short Term Loans */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: currentText }]}>Short term loans</Text>
-          <View style={styles.grid2Col}>
-            <TouchableOpacity style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
-              <View style={[styles.bentoIconBox, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
-                <Clock3 size={20} color={theme.textTertiary} />
-              </View>
-              <Text style={[styles.bentoTitle, { color: currentText }]}>Payday Loan</Text>
-              <Text style={[styles.bentoText, { color: theme.textTertiary }]}>Up to 3 months</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.bentoCard, { backgroundColor: currentCard, borderColor: currentBorder }]}>
-              <View style={[styles.bentoIconBox, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.05)' }]}>
-                <ShoppingBag size={20} color={theme.textTertiary} />
-              </View>
-              <Text style={[styles.bentoTitle, { color: currentText }]}>BNPL</Text>
-              <Text style={[styles.bentoText, { color: theme.textTertiary }]}>Buy now, pay later</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         {/* Secured Loans */}
